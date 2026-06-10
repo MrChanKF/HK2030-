@@ -8,1107 +8,427 @@
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --glass-bg:rgba(10,15,30,0.55);
-  --glass-border:rgba(255,255,255,0.12);
-  --glass-shadow:0 8px 32px rgba(0,0,0,0.45);
-  --accent-blue:#00d4ff;
-  --accent-gold:#ffd700;
-  --accent-red:#ff4444;
-  --accent-green:#00ff88;
-  --text-primary:#f0f0f0;
-  --text-secondary:#b0c0d0;
-  --font-main:'Noto Sans TC',sans-serif;
-  --font-serif:'Noto Serif TC',serif;
+  --glass-bg:rgba(10,15,30,0.55);--glass-border:rgba(255,255,255,0.12);--glass-shadow:0 4px 20px rgba(0,0,0,0.4);
+  --accent-blue:#00d4ff;--accent-gold:#ffd700;--accent-red:#ff4444;--accent-green:#00ff88;
+  --text-primary:#f0f0f0;--text-secondary:#b0c0d0;
+  --font-main:'Noto Sans TC',sans-serif;--font-serif:'Noto Serif TC',serif;
 }
-html{font-size:17px;overflow-x:hidden;}
-body{
-  font-family:var(--font-main);
-  color:var(--text-primary);
-  min-height:100vh;
-  background:#0a0a1a;
-  overflow-x:hidden;
-  position:relative;
-}
-
-/* ===== BACKGROUND ===== */
-#bg-layer{
-  position:fixed;top:0;left:0;width:100%;height:100%;
-  background:url('https://images.unsplash.com/photo-1546464033-5b15b45626ab?q=80&w=1920&auto=format&fit=crop') center center/cover no-repeat;
-  z-index:0;
-}
-#bg-overlay{
-  position:fixed;top:0;left:0;width:100%;height:100%;
-  background:linear-gradient(160deg,rgba(3,6,18,0.88) 0%,rgba(8,16,35,0.78) 40%,rgba(5,10,25,0.85) 100%);
-  z-index:1;transition:box-shadow 0.4s;
-}
-#scanline{
-  position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,0.012) 2px,rgba(0,212,255,0.012) 4px);
-}
-#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;}
-
-/* ===== GLASS ===== */
-.glass{
-  background:var(--glass-bg);
-  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-  border:1px solid var(--glass-border);
-  border-radius:12px;
-  box-shadow:var(--glass-shadow);
-}
+html{font-size:clamp(14px,2.2vmin,19px);overflow-x:hidden;}
+body{font-family:var(--font-main);color:var(--text-primary);min-height:100vh;background:#0a0a1a;overflow-x:hidden;position:relative;}
+#bg-layer{position:fixed;inset:0;background:url('https://images.unsplash.com/photo-1546464033-5b15b45626ab?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat;z-index:0;}
+#bg-overlay{position:fixed;inset:0;background:linear-gradient(160deg,rgba(3,6,18,0.88),rgba(8,16,35,0.78) 40%,rgba(5,10,25,0.85));z-index:1;transition:box-shadow 0.4s;}
+#scanline{position:fixed;inset:0;z-index:2;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,0.012) 2px,rgba(0,212,255,0.012) 4px);}
+#particle-canvas{position:fixed;inset:0;z-index:3;pointer-events:none;}
+.glass{background:var(--glass-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:10px;box-shadow:var(--glass-shadow);}
 
 /* ===== LAYOUT ===== */
-#app{
-  position:relative;z-index:10;
-  display:flex;flex-direction:column;
-  height:100vh;height:100dvh;
-  padding:clamp(4px,0.6vw,8px);
-  gap:clamp(4px,0.5vh,8px);
-  opacity:0;
-  transition:opacity 0.8s ease-out;
-  overflow:hidden;
-}
+#app{position:relative;z-index:10;display:flex;flex-direction:column;height:100vh;height:100dvh;padding:clamp(4px,0.5vh,10px);gap:clamp(4px,0.5vh,8px);opacity:0;transition:opacity 0.8s;overflow:hidden;}
 #app.visible{opacity:1;}
 
-/* ===== TOP HUD ===== */
-#hud{
-  display:flex;flex-wrap:wrap;align-items:center;gap:clamp(6px,1vw,12px);
-  padding:clamp(6px,0.8vh,12px) clamp(10px,1.5vw,20px);
-  position:relative;overflow:hidden;
-  flex-shrink:0;
-}
-#hud::after{
-  content:'';position:absolute;bottom:0;left:5%;right:5%;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(0,212,255,0.2),transparent);
-}
-#hud-left{display:flex;align-items:center;gap:clamp(10px,1.4vw,16px);flex-wrap:wrap;}
-#hud-title{
-  font-family:var(--font-serif);
-  font-size:clamp(0.95rem,2vw,1.45rem);
-  font-weight:900;letter-spacing:1.5px;
-  background:linear-gradient(90deg,var(--accent-blue),var(--accent-gold));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  background-clip:text;white-space:nowrap;
-}
-#hud-phase{
-  font-size:clamp(0.78rem,1.15vw,0.95rem);
-  color:var(--accent-gold);
-  border:1px solid rgba(255,215,0,0.25);
-  padding:4px 14px;border-radius:16px;
-  white-space:nowrap;background:rgba(255,215,0,0.05);
-  font-weight:500;
-}
-#hud-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
-#rules-btn{
-  background:rgba(0,212,255,0.08);
-  border:1px solid rgba(0,212,255,0.25);
-  border-radius:8px;padding:6px 16px;
-  color:var(--accent-blue);font-family:var(--font-main);
-  font-size:clamp(0.75rem,1vw,0.88rem);font-weight:600;
-  cursor:pointer;transition:all 0.3s;white-space:nowrap;
-}
-#rules-btn:hover{background:rgba(0,212,255,0.18);box-shadow:0 0 20px rgba(0,212,255,0.12);}
-#hud-bars{
-  display:flex;flex-wrap:wrap;gap:clamp(8px,1.4vw,18px);flex:1;
-  justify-content:flex-end;min-width:0;
-}
-.hud-bar-group{display:flex;align-items:center;gap:6px;min-width:140px;flex:1;max-width:260px;}
-.hud-bar-label{font-size:clamp(0.68rem,0.95vw,0.82rem);white-space:nowrap;color:var(--text-secondary);font-weight:500;}
-.hud-bar-track{flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;position:relative;min-width:45px;}
-.hud-bar-fill{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1),background 0.6s;position:relative;}
-.hud-bar-fill::after{content:'';position:absolute;right:0;top:0;bottom:0;width:5px;border-radius:0 4px 4px 0;background:rgba(255,255,255,0.4);filter:blur(2px);}
-.hud-bar-value{font-size:clamp(0.7rem,0.95vw,0.85rem);font-weight:700;min-width:26px;text-align:right;}
-.bar-econ .hud-bar-fill{background:linear-gradient(90deg,#ffd700,#ffaa00);}
-.bar-econ .hud-bar-value{color:#ffd700;}
-.bar-env .hud-bar-fill{background:linear-gradient(90deg,#00ff88,#00cc66);}
-.bar-env .hud-bar-value{color:#00ff88;}
-.bar-live .hud-bar-fill{background:linear-gradient(90deg,#00d4ff,#0088ff);}
-.bar-live .hud-bar-value{color:#00d4ff;}
+/* HUD */
+#hud{display:flex;flex-wrap:wrap;align-items:center;gap:clamp(6px,1vw,14px);padding:clamp(6px,0.8vh,14px) clamp(10px,1.5vw,22px);position:relative;flex-shrink:0;}
+#hud::after{content:'';position:absolute;bottom:0;left:5%;right:5%;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,0.2),transparent);}
+#hud-left{display:flex;align-items:center;gap:clamp(8px,1vw,14px);flex-wrap:wrap;}
+#hud-title{font-family:var(--font-serif);font-size:clamp(0.8rem,1.8vw,1.3rem);font-weight:900;letter-spacing:1px;background:linear-gradient(90deg,var(--accent-blue),var(--accent-gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap;}
+#hud-phase{font-size:clamp(0.65rem,1vw,0.85rem);color:var(--accent-gold);border:1px solid rgba(255,215,0,0.25);padding:3px 12px;border-radius:14px;white-space:nowrap;background:rgba(255,215,0,0.05);font-weight:500;}
+#hud-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
+#rules-btn{background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.25);border-radius:7px;padding:4px 14px;color:var(--accent-blue);font-family:var(--font-main);font-size:clamp(0.6rem,0.9vw,0.8rem);font-weight:600;cursor:pointer;transition:all 0.3s;white-space:nowrap;}
+#rules-btn:hover{background:rgba(0,212,255,0.18);}
+#hud-bars{display:flex;flex-wrap:wrap;gap:clamp(6px,1vw,14px);flex:1;justify-content:flex-end;min-width:0;}
+.hud-bar-group{display:flex;align-items:center;gap:6px;min-width:130px;flex:1;max-width:240px;}
+.hud-bar-label{font-size:clamp(0.6rem,0.9vw,0.78rem);white-space:nowrap;color:var(--text-secondary);font-weight:500;}
+.hud-bar-track{flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;min-width:40px;}
+.hud-bar-fill{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1);position:relative;}
+.hud-bar-fill::after{content:'';position:absolute;right:0;top:0;bottom:0;width:5px;border-radius:0 4px 4px 0;background:rgba(255,255,255,0.4);filter:blur(1px);}
+.hud-bar-value{font-size:clamp(0.6rem,0.9vw,0.8rem);font-weight:700;min-width:24px;text-align:right;}
+.bar-econ .hud-bar-fill{background:linear-gradient(90deg,#ffd700,#ffaa00);}.bar-econ .hud-bar-value{color:#ffd700;}
+.bar-env .hud-bar-fill{background:linear-gradient(90deg,#00ff88,#00cc66);}.bar-env .hud-bar-value{color:#00ff88;}
+.bar-live .hud-bar-fill{background:linear-gradient(90deg,#00d4ff,#0088ff);}.bar-live .hud-bar-value{color:#00d4ff;}
 
-/* ===== MAIN CONTENT ===== */
-#main-content{
-  display:grid;
-  grid-template-columns:1fr clamp(200px,24vw,310px);
-  gap:clamp(4px,0.5vw,8px);
-  flex:1;min-height:0;overflow:hidden;
-}
-@media(max-width:960px){
-  #main-content{grid-template-columns:1fr;grid-template-rows:1fr auto;overflow-y:auto;}
-}
+/* MAIN */
+#main-content{display:grid;grid-template-columns:1fr clamp(180px,24vw,300px);gap:clamp(4px,0.5vw,8px);flex:1;min-height:0;overflow:hidden;}
 
-/* ===== MAP AREA ===== */
-#map-container{
-  padding:clamp(8px,1vw,14px);
-  display:flex;flex-direction:column;
-  min-height:0;
-}
-#map-title{
-  font-family:var(--font-serif);
-  font-size:clamp(0.8rem,1.2vw,1.0rem);
-  font-weight:700;margin-bottom:clamp(4px,0.6vh,8px);
-  color:var(--accent-blue);letter-spacing:1px;
-  display:flex;align-items:center;gap:6px;
-  flex-shrink:0;
-}
-#map-title::before{content:'';display:inline-block;width:3px;height:14px;background:var(--accent-blue);border-radius:2px;}
-#map-grid{
-  flex:1;display:grid;
-  grid-template-columns:1fr 1fr;
-  grid-template-rows:1fr 1fr;
-  gap:clamp(4px,0.5vw,8px);
-  min-height:0;
-}
-.map-zone{
-  border-radius:8px;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  padding:clamp(6px,0.8vw,12px);
-  text-align:center;
-  position:relative;overflow:hidden;
-  transition:all 0.4s;
-  cursor:pointer;
-}
-.map-zone::before{
-  content:'';position:absolute;inset:0;border-radius:8px;
-  opacity:0.07;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px);
-  background-size:22px 22px;pointer-events:none;z-index:1;
-}
-.map-zone::after{
-  content:'';position:absolute;inset:0;border-radius:8px;
-  pointer-events:none;transition:opacity 2s;z-index:1;
-}
+/* MAP */
+#map-container{padding:clamp(6px,1vw,14px);display:flex;flex-direction:column;min-height:0;}
+#map-title{font-family:var(--font-serif);font-size:clamp(0.7rem,1.2vw,0.95rem);font-weight:700;margin-bottom:clamp(4px,0.5vh,8px);color:var(--accent-blue);display:flex;align-items:center;gap:6px;flex-shrink:0;}
+#map-title::before{content:'';display:inline-block;width:3px;height:13px;background:var(--accent-blue);border-radius:2px;}
+#map-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:clamp(4px,0.5vw,8px);min-height:0;}
+.map-zone{border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(6px,0.8vw,12px);text-align:center;position:relative;overflow:hidden;transition:all 0.4s;cursor:pointer;}
+.map-zone::before{content:'';position:absolute;inset:0;border-radius:8px;opacity:0.06;background-image:linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px);background-size:20px 20px;pointer-events:none;z-index:1;}
+.map-zone::after{content:'';position:absolute;inset:0;border-radius:8px;pointer-events:none;z-index:1;}
 .map-zone.pulse::after{animation:zonePulse 4s ease-in-out infinite;}
 @keyframes zonePulse{0%,100%{opacity:0.15;}50%{opacity:0.35;}}
-
-.zone-victoria{
-  background:linear-gradient(135deg,rgba(255,215,0,0.1) 0%,rgba(255,170,0,0.06) 50%,rgba(180,120,0,0.03) 100%);
-  border:1.5px solid rgba(255,215,0,0.25);
-}
+.zone-victoria{background:linear-gradient(135deg,rgba(255,215,0,0.1),rgba(255,170,0,0.04));border:1.5px solid rgba(255,215,0,0.25);}
 .zone-victoria::after{background:radial-gradient(ellipse at 60% 40%,rgba(255,215,0,0.2),transparent 65%);}
-
-.zone-north{
-  background:linear-gradient(135deg,rgba(0,255,136,0.1) 0%,rgba(0,200,100,0.06) 50%,rgba(0,150,80,0.03) 100%);
-  border:1.5px solid rgba(0,255,136,0.25);
-}
+.zone-north{background:linear-gradient(135deg,rgba(0,255,136,0.1),rgba(0,200,100,0.04));border:1.5px solid rgba(0,255,136,0.25);}
 .zone-north::after{background:radial-gradient(ellipse at 40% 40%,rgba(0,255,136,0.2),transparent 65%);}
-
-.zone-west{
-  background:linear-gradient(135deg,rgba(0,120,255,0.1) 0%,rgba(0,100,220,0.06) 50%,rgba(0,80,180,0.03) 100%);
-  border:1.5px solid rgba(80,160,255,0.25);
-}
+.zone-west{background:linear-gradient(135deg,rgba(0,120,255,0.1),rgba(0,100,220,0.04));border:1.5px solid rgba(80,160,255,0.25);}
 .zone-west::after{background:radial-gradient(ellipse at 60% 60%,rgba(0,140,255,0.2),transparent 65%);}
-
-.zone-east{
-  background:linear-gradient(135deg,rgba(160,80,255,0.1) 0%,rgba(140,60,220,0.06) 50%,rgba(120,40,200,0.03) 100%);
-  border:1.5px solid rgba(180,100,255,0.25);
-}
+.zone-east{background:linear-gradient(135deg,rgba(160,80,255,0.1),rgba(140,60,220,0.04));border:1.5px solid rgba(180,100,255,0.25);}
 .zone-east::after{background:radial-gradient(ellipse at 40% 60%,rgba(160,80,255,0.2),transparent 65%);}
-
-.map-zone-name{
-  font-size:clamp(0.72rem,1.15vw,0.95rem);font-weight:700;
-  margin-bottom:2px;position:relative;z-index:2;
-}
-.map-zone-sub{font-size:clamp(0.55rem,0.8vw,0.68rem);color:var(--text-secondary);position:relative;z-index:2;}
-.zone-victoria .map-zone-name{color:#ffd700;}
-.zone-north .map-zone-name{color:#00ff88;}
-.zone-west .map-zone-name{color:#6aadff;}
-.zone-east .map-zone-name{color:#c088ff;}
-.map-zone.drag-over{
-  border-color:var(--accent-gold) !important;
-  box-shadow:0 0 35px rgba(255,215,0,0.3),inset 0 0 35px rgba(255,215,0,0.08);
-  transform:scale(1.03);
-}
-.map-zone .drop-indicator{
-  position:absolute;bottom:6px;
-  font-size:clamp(0.58rem,0.82vw,0.7rem);color:var(--accent-gold);
-  opacity:0;transition:opacity 0.3s;z-index:3;
-}
+.map-zone-name{font-size:clamp(0.65rem,1.1vw,0.92rem);font-weight:700;margin-bottom:2px;position:relative;z-index:2;}
+.map-zone-sub{font-size:clamp(0.5rem,0.75vw,0.65rem);color:var(--text-secondary);position:relative;z-index:2;}
+.zone-victoria .map-zone-name{color:#ffd700;}.zone-north .map-zone-name{color:#00ff88;}.zone-west .map-zone-name{color:#6aadff;}.zone-east .map-zone-name{color:#c088ff;}
+.map-zone.drag-over{border-color:var(--accent-gold) !important;box-shadow:0 0 30px rgba(255,215,0,0.25),inset 0 0 30px rgba(255,215,0,0.06);transform:scale(1.03);}
+.map-zone .drop-indicator{position:absolute;bottom:4px;font-size:clamp(0.5rem,0.75vw,0.62rem);color:var(--accent-gold);opacity:0;transition:opacity 0.3s;z-index:3;}
 .map-zone.drag-over .drop-indicator{opacity:1;}
-.placed-badge{
-  margin-top:3px;
-  font-size:clamp(0.5rem,0.7vw,0.62rem);
-  padding:2px 7px;border-radius:6px;
-  background:rgba(0,212,255,0.12);
-  border:1px solid rgba(0,212,255,0.3);
-  color:var(--accent-blue);
-  position:relative;z-index:2;
-  animation:badgeIn 0.5s ease-out;
-}
+.placed-badge{margin-top:3px;font-size:clamp(0.45rem,0.65vw,0.55rem);padding:1px 6px;border-radius:5px;background:rgba(0,212,255,0.12);border:1px solid rgba(0,212,255,0.3);color:var(--accent-blue);position:relative;z-index:2;animation:badgeIn 0.5s ease-out;}
 @keyframes badgeIn{from{opacity:0;transform:scale(0.8);}to{opacity:1;transform:scale(1);}}
 
-/* ===== ACTION LOG ===== */
-#action-log{
-  padding:clamp(6px,0.8vh,12px) clamp(8px,1vw,14px);
-  display:flex;flex-direction:column;
-  flex-shrink:0;
-  max-height:clamp(80px,12vh,130px);
-  overflow:hidden;
-}
-#log-title{
-  font-family:var(--font-serif);
-  font-size:clamp(0.72rem,1vw,0.88rem);
-  font-weight:700;color:var(--accent-blue);
-  margin-bottom:clamp(4px,0.4vh,6px);letter-spacing:1px;
-  border-bottom:1px solid rgba(0,212,255,0.12);
-  padding-bottom:4px;
-  display:flex;align-items:center;gap:5px;
-  flex-shrink:0;
-}
-#log-title::before{content:'';display:inline-block;width:3px;height:12px;background:var(--accent-blue);border-radius:2px;}
-#log-entries{
-  flex:1;overflow-y:auto;
-  display:flex;flex-direction:column;gap:4px;
-  scrollbar-width:thin;scrollbar-color:rgba(0,212,255,0.2) transparent;
-}
-#log-entries::-webkit-scrollbar{width:3px;}
-#log-entries::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.25);border-radius:2px;}
-.log-entry{
-  font-size:clamp(0.6rem,0.82vw,0.72rem);
-  padding:4px 8px;border-radius:5px;
-  background:rgba(0,212,255,0.03);
-  border-left:2px solid var(--accent-blue);
-  line-height:1.5;
-  animation:logSlide 0.4s ease-out;
-}
+/* ACTION LOG (bottom) */
+#action-log{padding:clamp(5px,0.6vh,10px) clamp(6px,0.8vw,12px);display:flex;flex-direction:column;flex-shrink:0;max-height:clamp(60px,12vh,120px);overflow:hidden;}
+#log-title{font-family:var(--font-serif);font-size:clamp(0.6rem,0.9vw,0.78rem);font-weight:700;color:var(--accent-blue);margin-bottom:clamp(2px,0.3vh,5px);border-bottom:1px solid rgba(0,212,255,0.12);padding-bottom:3px;display:flex;align-items:center;gap:4px;flex-shrink:0;}
+#log-title::before{content:'';display:inline-block;width:2px;height:11px;background:var(--accent-blue);border-radius:1px;}
+#log-entries{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:3px;scrollbar-width:thin;scrollbar-color:rgba(0,212,255,0.2) transparent;}
+#log-entries::-webkit-scrollbar{width:2px;}#log-entries::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.25);border-radius:1px;}
+.log-entry{font-size:clamp(0.52rem,0.78vw,0.68rem);padding:3px 6px;border-radius:4px;background:rgba(0,212,255,0.03);border-left:2px solid var(--accent-blue);line-height:1.45;animation:logSlide 0.4s ease-out;}
 @keyframes logSlide{from{opacity:0;transform:translateX(15px);}to{opacity:1;transform:translateX(0);}}
 .log-entry .log-phase{color:var(--accent-gold);font-weight:700;}
 .log-entry .log-positive{color:var(--accent-green);font-weight:600;}
 .log-entry .log-negative{color:var(--accent-red);font-weight:600;}
 
-/* ===== PROJECT CARDS (Sidebar) ===== */
-#cards-section{
-  padding:clamp(6px,0.8vh,12px) clamp(8px,1vw,14px);
-  display:flex;flex-direction:column;
-  overflow:hidden;
-  min-height:0;
-}
-#cards-title{
-  font-family:var(--font-serif);
-  font-size:clamp(0.7rem,0.95vw,0.85rem);
-  font-weight:700;color:var(--accent-blue);
-  margin-bottom:clamp(4px,0.5vh,8px);letter-spacing:0.5px;
-  display:flex;align-items:center;gap:6px;
-  line-height:1.3;flex-shrink:0;
-}
-#cards-title::before{content:'';display:inline-block;width:3px;height:12px;background:var(--accent-blue);border-radius:2px;flex-shrink:0;}
-#cards-grid{
-  display:flex;flex-direction:column;
-  gap:clamp(3px,0.4vh,6px);
-  overflow-y:auto;
-  flex:1;min-height:0;
-  scrollbar-width:thin;scrollbar-color:rgba(0,212,255,0.2) transparent;
-}
-#cards-grid::-webkit-scrollbar{width:3px;}
-#cards-grid::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.25);border-radius:2px;}
-.project-card{
-  background:rgba(8,16,32,0.65);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border:1px solid rgba(255,255,255,0.07);
-  border-radius:8px;
-  padding:clamp(6px,0.7vh,10px) clamp(8px,0.8vw,12px);
-  cursor:grab;
-  transition:transform 0.35s cubic-bezier(.25,.46,.45,.94),box-shadow 0.35s,border-color 0.35s;
-  position:relative;overflow:hidden;user-select:none;
-  flex-shrink:0;
-}
-.project-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--accent-blue),transparent);
-  opacity:0;transition:opacity 0.4s;
-}
+/* CARDS (sidebar) */
+#cards-section{padding:clamp(5px,0.6vh,10px) clamp(6px,0.8vw,12px);display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+#cards-title{font-family:var(--font-serif);font-size:clamp(0.6rem,0.9vw,0.78rem);font-weight:700;color:var(--accent-blue);margin-bottom:clamp(3px,0.4vh,6px);display:flex;align-items:center;gap:5px;line-height:1.3;flex-shrink:0;}
+#cards-title::before{content:'';display:inline-block;width:2px;height:11px;background:var(--accent-blue);border-radius:1px;flex-shrink:0;}
+#cards-grid{display:flex;flex-direction:column;gap:clamp(3px,0.4vh,6px);overflow-y:auto;flex:1;min-height:0;scrollbar-width:thin;scrollbar-color:rgba(0,212,255,0.2) transparent;}
+#cards-grid::-webkit-scrollbar{width:2px;}#cards-grid::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.25);border-radius:1px;}
+.project-card{background:rgba(8,16,32,0.65);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.07);border-radius:7px;padding:clamp(5px,0.6vh,10px) clamp(6px,0.7vw,10px);cursor:grab;transition:transform 0.35s,box-shadow 0.35s,border-color 0.35s;position:relative;overflow:hidden;user-select:none;flex-shrink:0;}
+.project-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent-blue),transparent);opacity:0;transition:opacity 0.4s;}
 .project-card:hover::before{opacity:1;}
-.project-card:hover{
-  transform:translateX(-4px);
-  box-shadow:0 6px 25px rgba(0,212,255,0.12);
-  border-color:rgba(0,212,255,0.25);
-}
+.project-card:hover{transform:translateX(-3px);box-shadow:0 4px 20px rgba(0,212,255,0.1);border-color:rgba(0,212,255,0.25);}
 .project-card:active{cursor:grabbing;transform:scale(0.98);}
 .project-card.used{opacity:0.25;pointer-events:none;filter:grayscale(0.8);}
-.card-hectare{
-  font-size:clamp(0.52rem,0.68vw,0.6rem);
-  color:var(--accent-gold);
-  background:rgba(255,215,0,0.08);
-  border:1px solid rgba(255,215,0,0.18);
-  padding:1px 6px;border-radius:5px;
-  display:inline-block;margin-bottom:2px;
-}
-.card-title{
-  font-size:clamp(0.68rem,0.92vw,0.82rem);
-  font-weight:700;margin-bottom:2px;line-height:1.3;
-}
-.card-desc{
-  font-size:clamp(0.55rem,0.72vw,0.65rem);
-  color:var(--text-secondary);line-height:1.45;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-}
-.card-drag-hint{
-  margin-top:3px;
-  font-size:clamp(0.5rem,0.62vw,0.55rem);
-  color:rgba(0,212,255,0.45);text-align:center;
-}
+.card-hectare{font-size:clamp(0.45rem,0.65vw,0.55rem);color:var(--accent-gold);background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.18);padding:0 5px;border-radius:4px;display:inline-block;margin-bottom:2px;}
+.card-title{font-size:clamp(0.6rem,0.88vw,0.78rem);font-weight:700;margin-bottom:2px;line-height:1.25;}
+.card-desc{font-size:clamp(0.5rem,0.7vw,0.6rem);color:var(--text-secondary);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.card-drag-hint{margin-top:2px;font-size:clamp(0.42rem,0.58vw,0.5rem);color:rgba(0,212,255,0.45);text-align:center;}
 
-/* ===== MODAL ===== */
-#modal-overlay{
-  position:fixed;inset:0;z-index:1000;
-  background:rgba(0,0,0,0.72);
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  display:none;align-items:center;justify-content:center;
-  padding:clamp(12px,3vw,40px);overflow-y:auto;
-}
+/* MODAL */
+#modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:clamp(10px,2vw,30px);overflow-y:auto;}
 #modal-overlay.active{display:flex;}
-#modal-box{
-  background:rgba(8,14,30,0.9);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  border:1px solid rgba(0,212,255,0.12);
-  border-radius:14px;
-  box-shadow:0 20px 60px rgba(0,0,0,0.65),0 0 100px rgba(0,212,255,0.04);
-  width:100%;max-width:800px;
-  max-height:90vh;overflow-y:auto;
-  padding:clamp(18px,3vw,36px);
-  animation:modalIn 0.5s cubic-bezier(.4,0,.2,1);
-}
-@keyframes modalIn{from{opacity:0;transform:scale(0.93) translateY(25px);}to{opacity:1;transform:scale(1) translateY(0);}}
-#modal-box::-webkit-scrollbar{width:4px;}
-#modal-box::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.18);border-radius:2px;}
-#modal-header{margin-bottom:20px;position:relative;}
-#modal-header::after{content:'';display:block;margin-top:14px;height:1px;background:linear-gradient(90deg,rgba(0,212,255,0.2),transparent);}
-#modal-project-title{
-  font-family:var(--font-serif);
-  font-size:clamp(1.1rem,2.2vw,1.55rem);
-  font-weight:900;
-  background:linear-gradient(90deg,var(--accent-blue),#e0f0ff);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  background-clip:text;margin-bottom:10px;
-}
-#modal-project-bg{
-  font-size:clamp(0.78rem,1.08vw,0.92rem);
-  color:var(--text-secondary);line-height:1.9;
-  border-left:2px solid rgba(0,212,255,0.3);padding-left:14px;
-}
-#modal-hearing-title{
-  font-family:var(--font-serif);
-  font-size:clamp(0.9rem,1.4vw,1.12rem);
-  font-weight:700;color:var(--accent-gold);
-  margin:20px 0 14px;letter-spacing:1px;
-  display:flex;align-items:center;gap:8px;
-}
-#modal-hearing-title::before{content:'';display:inline-block;width:3px;height:16px;background:var(--accent-gold);border-radius:2px;}
-#stakeholders-container{display:flex;flex-direction:column;gap:16px;margin-bottom:24px;}
-.stakeholder-row{
-  display:flex;gap:clamp(10px,1.5vw,16px);align-items:flex-start;
-  animation:stakeIn 0.6s ease-out both;
-}
-@keyframes stakeIn{from{opacity:0;transform:translateX(-25px);}to{opacity:1;transform:translateX(0);}}
-.stakeholder-avatar-wrap{
-  width:clamp(52px,6.5vw,68px);height:clamp(52px,6.5vw,68px);
-  border-radius:50%;flex-shrink:0;
-  border:2px solid rgba(255,255,255,0.15);
-  box-shadow:0 4px 18px rgba(0,0,0,0.5);
-  overflow:hidden;background:rgba(20,30,50,0.8);
-  display:flex;align-items:center;justify-content:center;
-}
+#modal-box{background:rgba(8,14,30,0.9);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(0,212,255,0.12);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.65);width:100%;max-width:780px;max-height:90vh;overflow-y:auto;padding:clamp(14px,2.5vw,32px);animation:modalIn 0.5s cubic-bezier(.4,0,.2,1);}
+@keyframes modalIn{from{opacity:0;transform:scale(0.93) translateY(20px);}to{opacity:1;transform:scale(1) translateY(0);}}
+#modal-box::-webkit-scrollbar{width:4px;}#modal-box::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.18);border-radius:2px;}
+#modal-header{margin-bottom:16px;position:relative;}
+#modal-header::after{content:'';display:block;margin-top:12px;height:1px;background:linear-gradient(90deg,rgba(0,212,255,0.2),transparent);}
+#modal-project-title{font-family:var(--font-serif);font-size:clamp(1rem,2vw,1.45rem);font-weight:900;background:linear-gradient(90deg,var(--accent-blue),#e0f0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;}
+#modal-project-bg{font-size:clamp(0.7rem,1vw,0.88rem);color:var(--text-secondary);line-height:1.8;border-left:2px solid rgba(0,212,255,0.3);padding-left:12px;}
+#modal-hearing-title{font-family:var(--font-serif);font-size:clamp(0.82rem,1.3vw,1.05rem);font-weight:700;color:var(--accent-gold);margin:16px 0 12px;display:flex;align-items:center;gap:8px;}
+#modal-hearing-title::before{content:'';display:inline-block;width:3px;height:14px;background:var(--accent-gold);border-radius:2px;}
+#stakeholders-container{display:flex;flex-direction:column;gap:14px;margin-bottom:20px;}
+.stakeholder-row{display:flex;gap:clamp(8px,1.2vw,14px);align-items:flex-start;animation:stakeIn 0.6s ease-out both;}
+@keyframes stakeIn{from{opacity:0;transform:translateX(-20px);}to{opacity:1;transform:translateX(0);}}
+.stakeholder-avatar-wrap{width:clamp(44px,5.5vw,62px);height:clamp(44px,5.5vw,62px);border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,0.15);box-shadow:0 4px 15px rgba(0,0,0,0.5);overflow:hidden;background:rgba(20,30,50,0.8);display:flex;align-items:center;justify-content:center;}
 .stakeholder-avatar-wrap svg{width:100%;height:100%;}
 .stakeholder-info{flex:1;min-width:0;}
-.stakeholder-role{
-  font-size:clamp(0.72rem,1.0vw,0.88rem);
-  font-weight:700;margin-bottom:4px;
-}
-.stakeholder-text{
-  font-size:clamp(0.72rem,1.02vw,0.88rem);
-  color:var(--text-secondary);line-height:1.85;min-height:1.4em;
-}
-.stakeholder-text .cursor-blink{
-  display:inline-block;width:2px;height:0.9em;
-  background:var(--accent-blue);
-  animation:blink 0.7s step-end infinite;
-  vertical-align:text-bottom;margin-left:1px;
-}
+.stakeholder-role{font-size:clamp(0.65rem,0.95vw,0.82rem);font-weight:700;margin-bottom:3px;}
+.stakeholder-text{font-size:clamp(0.65rem,0.95vw,0.82rem);color:var(--text-secondary);line-height:1.8;min-height:1.2em;}
+.stakeholder-text .cursor-blink{display:inline-block;width:2px;height:0.9em;background:var(--accent-blue);animation:blink 0.7s step-end infinite;vertical-align:text-bottom;margin-left:1px;}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
-
-/* Policy choices */
-#policy-choices{
-  display:flex;flex-direction:column;gap:12px;
-  opacity:0;transform:translateY(15px);
-  transition:opacity 0.8s,transform 0.8s;
-}
+#policy-choices{display:flex;flex-direction:column;gap:10px;opacity:0;transform:translateY(12px);transition:opacity 0.8s,transform 0.8s;}
 #policy-choices.visible{opacity:1;transform:translateY(0);}
-#policy-choices-title{
-  font-size:clamp(0.82rem,1.1vw,0.95rem);
-  font-weight:700;color:var(--accent-red);
-  text-align:center;
-  text-shadow:0 0 18px rgba(255,68,68,0.35);
-  animation:glowPulse 2s ease-in-out infinite;
-  margin-bottom:4px;
-}
-@keyframes glowPulse{0%,100%{text-shadow:0 0 18px rgba(255,68,68,0.25);}50%{text-shadow:0 0 30px rgba(255,68,68,0.55);}}
-.policy-btn{
-  background:rgba(255,255,255,0.03);
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:10px;
-  padding:clamp(12px,1.5vw,18px);
-  color:var(--text-primary);font-family:var(--font-main);
-  font-size:clamp(0.75rem,1.02vw,0.9rem);
-  cursor:pointer;transition:all 0.3s;
-  text-align:left;line-height:1.7;
-  position:relative;overflow:hidden;
-}
+#policy-choices-title{font-size:clamp(0.75rem,1.05vw,0.9rem);font-weight:700;color:var(--accent-red);text-align:center;text-shadow:0 0 18px rgba(255,68,68,0.35);animation:glowPulse 2s ease-in-out infinite;margin-bottom:4px;}
+@keyframes glowPulse{0%,100%{text-shadow:0 0 15px rgba(255,68,68,0.25);}50%{text-shadow:0 0 28px rgba(255,68,68,0.5);}}
+.policy-btn{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:clamp(10px,1.2vw,16px);color:var(--text-primary);font-family:var(--font-main);font-size:clamp(0.68rem,0.95vw,0.85rem);cursor:pointer;transition:all 0.3s;text-align:left;line-height:1.65;position:relative;overflow:hidden;}
 .policy-btn::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:transparent;transition:background 0.3s;}
-.policy-btn:hover{
-  background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.25);
-  box-shadow:0 0 20px rgba(0,212,255,0.08);transform:translateX(4px);
-}
+.policy-btn:hover{background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.25);transform:translateX(4px);}
 .policy-btn:hover::before{background:var(--accent-blue);}
-.policy-btn .policy-effects{
-  margin-top:8px;
-  font-size:clamp(0.7rem,0.95vw,0.82rem);
-  display:flex;flex-wrap:wrap;gap:8px 16px;
-}
+.policy-btn .policy-effects{margin-top:6px;font-size:clamp(0.62rem,0.88vw,0.78rem);display:flex;flex-wrap:wrap;gap:6px 14px;}
 .policy-btn .fx-positive{color:var(--accent-green);font-weight:700;}
 .policy-btn .fx-negative{color:var(--accent-red);font-weight:700;}
 .policy-btn .fx-neutral{color:var(--text-secondary);font-weight:600;}
 
-/* ===== RULES MODAL ===== */
-#rules-overlay{
-  position:fixed;inset:0;z-index:4000;
-  background:rgba(0,0,0,0.75);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  display:none;align-items:center;justify-content:center;
-  padding:clamp(14px,4vw,40px);
-}
+/* RULES */
+#rules-overlay{position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:clamp(12px,3vw,36px);}
 #rules-overlay.active{display:flex;}
-#rules-box{
-  background:rgba(8,14,30,0.92);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  border:1px solid rgba(0,212,255,0.15);
-  border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,0.6);
-  width:100%;max-width:650px;max-height:85vh;overflow-y:auto;
-  padding:clamp(20px,3.5vw,36px);
-  animation:modalIn 0.4s ease-out;
-}
-#rules-box h2{
-  font-family:var(--font-serif);
-  font-size:clamp(1.05rem,2vw,1.35rem);font-weight:900;
-  color:var(--accent-blue);margin-bottom:18px;text-align:center;
-}
-#rules-box h3{
-  font-size:clamp(0.85rem,1.2vw,1.0rem);font-weight:700;
-  color:var(--accent-gold);margin:16px 0 8px;
-}
-#rules-box p, #rules-box li{
-  font-size:clamp(0.78rem,1.05vw,0.9rem);
-  color:var(--text-secondary);line-height:1.9;
-}
-#rules-box ul{padding-left:20px;margin-bottom:10px;}
-#rules-box li{margin-bottom:4px;}
-#rules-close{
-  display:block;margin:20px auto 0;
-  padding:10px 36px;
-  background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);
-  border-radius:8px;color:var(--accent-blue);
-  font-family:var(--font-main);font-size:clamp(0.78rem,1vw,0.88rem);
-  font-weight:700;cursor:pointer;transition:all 0.3s;
-}
-#rules-close:hover{background:rgba(0,212,255,0.2);box-shadow:0 0 20px rgba(0,212,255,0.12);}
+#rules-box{background:rgba(8,14,30,0.92);backdrop-filter:blur(24px);border:1px solid rgba(0,212,255,0.15);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.6);width:100%;max-width:620px;max-height:85vh;overflow-y:auto;padding:clamp(16px,3vw,32px);animation:modalIn 0.4s ease-out;}
+#rules-box h2{font-family:var(--font-serif);font-size:clamp(0.95rem,1.8vw,1.25rem);font-weight:900;color:var(--accent-blue);margin-bottom:16px;text-align:center;}
+#rules-box h3{font-size:clamp(0.78rem,1.1vw,0.95rem);font-weight:700;color:var(--accent-gold);margin:14px 0 6px;}
+#rules-box p,#rules-box li{font-size:clamp(0.7rem,1vw,0.85rem);color:var(--text-secondary);line-height:1.85;}
+#rules-box ul{padding-left:18px;margin-bottom:8px;}#rules-box li{margin-bottom:3px;}
+#rules-close{display:block;margin:18px auto 0;padding:8px 30px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);border-radius:7px;color:var(--accent-blue);font-family:var(--font-main);font-size:clamp(0.7rem,0.95vw,0.82rem);font-weight:700;cursor:pointer;transition:all 0.3s;}
+#rules-close:hover{background:rgba(0,212,255,0.2);}
 
-/* ===== ROUND TRANSITION ===== */
-#round-screen{
-  position:fixed;inset:0;z-index:1500;
-  background:rgba(0,0,0,0.92);
-  backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);
-  display:none;align-items:center;justify-content:flex-start;
-  flex-direction:column;
-  padding-top:15vh;
-}
+/* ROUND */
+#round-screen{position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,0.92);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);display:none;align-items:center;justify-content:flex-start;flex-direction:column;padding-top:12%;}
 #round-screen.active{display:flex;}
-.round-phase-label{
-  font-size:clamp(0.8rem,1.2vw,1.0rem);
-  color:var(--accent-gold);
-  letter-spacing:4px;
-  margin-bottom:12px;
-  opacity:0;
-  animation:roundFadeIn 0.8s 0.2s ease-out forwards;
-}
-.round-phase-number{
-  font-family:var(--font-serif);
-  font-size:clamp(3rem,8vw,6rem);
-  font-weight:900;
-  background:linear-gradient(180deg,var(--accent-blue) 0%,var(--accent-gold) 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  background-clip:text;
-  opacity:0;
-  animation:roundZoomIn 1s 0.4s cubic-bezier(.2,.8,.2,1) forwards;
-}
-.round-phase-subtitle{
-  font-size:clamp(0.9rem,1.5vw,1.2rem);
-  color:var(--text-primary);
-  margin-top:16px;
-  opacity:0;
-  animation:roundFadeIn 0.8s 0.8s ease-out forwards;
-}
-.round-instruction{
-  margin-top:30px;
-  font-size:clamp(0.72rem,1vw,0.85rem);
-  color:var(--text-secondary);
-  opacity:0;
-  animation:roundFadeIn 0.8s 1.2s ease-out forwards;
-}
-
+.round-phase-label{font-size:clamp(0.7rem,1.1vw,0.9rem);color:var(--accent-gold);letter-spacing:4px;margin-bottom:10px;opacity:0;animation:roundFadeIn 0.8s 0.2s ease-out forwards;}
+.round-phase-number{font-family:var(--font-serif);font-size:clamp(2.5rem,8vmin,5rem);font-weight:900;background:linear-gradient(180deg,var(--accent-blue),var(--accent-gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;opacity:0;animation:roundZoomIn 1s 0.4s cubic-bezier(.2,.8,.2,1) forwards;}
+.round-phase-subtitle{font-size:clamp(0.82rem,1.4vw,1.1rem);color:var(--text-primary);margin-top:14px;opacity:0;animation:roundFadeIn 0.8s 0.8s ease-out forwards;}
+.round-instruction{margin-top:24px;font-size:clamp(0.65rem,0.95vw,0.8rem);color:var(--text-secondary);opacity:0;animation:roundFadeIn 0.8s 1.2s ease-out forwards;}
 @keyframes roundFadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 @keyframes roundZoomIn{from{opacity:0;transform:scale(0.5);}to{opacity:1;transform:scale(1);}}
 
-/* ===== TRANSITION SCREEN ===== */
-#transition-screen{
-  position:fixed;inset:0;z-index:2000;
-  background:rgba(0,0,0,0.96);
-  display:none;align-items:center;justify-content:flex-start;flex-direction:column;
-  padding-top:18vh;
-}
+/* TRANSITION */
+#transition-screen{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.96);display:none;align-items:center;justify-content:flex-start;flex-direction:column;padding-top:15%;}
 #transition-screen.active{display:flex;}
-#transition-text{
-  font-family:var(--font-serif);
-  font-size:clamp(1.1rem,2.5vw,1.6rem);
-  font-weight:700;text-align:center;
-  animation:transGlow 2.2s ease-in-out infinite;line-height:2;
-}
-@keyframes transGlow{
-  0%,100%{text-shadow:0 0 20px rgba(0,212,255,0.35);color:var(--accent-blue);}
-  50%{text-shadow:0 0 45px rgba(0,212,255,0.65),0 0 80px rgba(0,212,255,0.2);color:#e0f5ff;}
-}
-#transition-sub{font-size:clamp(0.72rem,1.1vw,0.88rem);color:var(--text-secondary);margin-top:12px;}
+#transition-text{font-family:var(--font-serif);font-size:clamp(1rem,2.2vw,1.45rem);font-weight:700;text-align:center;animation:transGlow 2.2s ease-in-out infinite;line-height:2;}
+@keyframes transGlow{0%,100%{text-shadow:0 0 20px rgba(0,212,255,0.35);color:var(--accent-blue);}50%{text-shadow:0 0 40px rgba(0,212,255,0.6);color:#e0f5ff;}}
+#transition-sub{font-size:clamp(0.65rem,1vw,0.82rem);color:var(--text-secondary);margin-top:10px;}
 .loading-dots::after{content:'';animation:dots 1.5s steps(4,end) infinite;}
 @keyframes dots{0%{content:'';}25%{content:'.';}50%{content:'..';}75%{content:'...';}}
 
-/* ===== SHAKE ===== */
-@keyframes cameraShake{
-  0%,100%{transform:translate(0,0);}
-  10%{transform:translate(-5px,-2px);}20%{transform:translate(5px,2px);}
-  30%{transform:translate(-3px,3px);}40%{transform:translate(3px,-3px);}
-  50%{transform:translate(-2px,2px);}60%{transform:translate(2px,-1px);}
-}
+/* SHAKE */
+@keyframes cameraShake{0%,100%{transform:translate(0,0);}10%{transform:translate(-5px,-2px);}20%{transform:translate(5px,2px);}30%{transform:translate(-3px,3px);}40%{transform:translate(3px,-3px);}}
 body.shake #app{animation:cameraShake 0.45s ease-in-out;}
 body.red-flash #bg-overlay{box-shadow:inset 0 0 150px rgba(255,0,0,0.2);}
 
-/* ===== FINAL REPORT ===== */
-#final-overlay{
-  position:fixed;inset:0;z-index:3000;
-  background:rgba(0,0,0,0.9);
-  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-  display:none;align-items:center;justify-content:center;
-  padding:clamp(14px,4vw,36px);overflow-y:auto;
-}
+/* FINAL */
+#final-overlay{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);display:none;align-items:center;justify-content:center;padding:clamp(12px,3vw,32px);overflow-y:auto;}
 #final-overlay.active{display:flex;}
-#final-box{
-  background:rgba(8,14,30,0.92);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  border:1px solid rgba(0,212,255,0.12);border-radius:14px;
-  box-shadow:0 20px 60px rgba(0,0,0,0.6);
-  width:100%;max-width:720px;max-height:88vh;overflow-y:auto;
-  padding:clamp(20px,4vw,40px);
-  animation:modalIn 0.8s cubic-bezier(.4,0,.2,1);
-}
-#final-box h2{
-  font-family:var(--font-serif);
-  font-size:clamp(1.15rem,2.5vw,1.6rem);font-weight:900;
-  text-align:center;margin-bottom:22px;
-  background:linear-gradient(90deg,var(--accent-gold),var(--accent-blue));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.final-bar-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
-.final-bar-label{font-size:clamp(0.75rem,1.05vw,0.9rem);min-width:100px;font-weight:500;}
-.final-bar-track{flex:1;height:14px;background:rgba(255,255,255,0.06);border-radius:7px;overflow:hidden;}
-.final-bar-fill{height:100%;border-radius:7px;transition:width 2s cubic-bezier(.4,0,.2,1);}
-.final-bar-val{font-size:clamp(0.8rem,1.1vw,0.95rem);font-weight:700;min-width:32px;text-align:right;}
-#final-grade{
-  text-align:center;margin:24px 0 16px;
-  font-family:var(--font-serif);
-  font-size:clamp(1.5rem,4vw,2.4rem);font-weight:900;
-}
-#final-commentary{
-  font-size:clamp(0.78rem,1.05vw,0.9rem);
-  line-height:2.1;color:var(--text-secondary);
-  border-top:1px solid rgba(0,212,255,0.12);
-  padding-top:16px;text-align:justify;
-}
-#final-restart{
-  display:block;margin:22px auto 0;padding:12px 36px;
-  background:linear-gradient(135deg,rgba(0,212,255,0.12),rgba(0,212,255,0.04));
-  border:1px solid rgba(0,212,255,0.3);border-radius:8px;
-  color:var(--accent-blue);font-family:var(--font-main);
-  font-size:clamp(0.78rem,1.05vw,0.9rem);font-weight:700;
-  cursor:pointer;transition:all 0.3s;letter-spacing:1px;
-}
-#final-restart:hover{background:rgba(0,212,255,0.18);box-shadow:0 0 25px rgba(0,212,255,0.15);}
+#final-box{background:rgba(8,14,30,0.92);backdrop-filter:blur(24px);border:1px solid rgba(0,212,255,0.12);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.6);width:100%;max-width:700px;max-height:90vh;overflow-y:auto;padding:clamp(16px,3.5vw,36px);animation:modalIn 0.8s cubic-bezier(.4,0,.2,1);}
+#final-box h2{font-family:var(--font-serif);font-size:clamp(1.05rem,2.2vw,1.5rem);font-weight:900;text-align:center;margin-bottom:20px;background:linear-gradient(90deg,var(--accent-gold),var(--accent-blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.final-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.final-bar-label{font-size:clamp(0.68rem,1vw,0.85rem);min-width:90px;font-weight:500;}
+.final-bar-track{flex:1;height:12px;background:rgba(255,255,255,0.06);border-radius:6px;overflow:hidden;}
+.final-bar-fill{height:100%;border-radius:6px;transition:width 2s cubic-bezier(.4,0,.2,1);}
+.final-bar-val{font-size:clamp(0.72rem,1.05vw,0.88rem);font-weight:700;min-width:30px;text-align:right;}
+#final-grade{text-align:center;margin:20px 0 14px;font-family:var(--font-serif);font-size:clamp(1.3rem,3.5vw,2.2rem);font-weight:900;}
+#final-commentary{font-size:clamp(0.7rem,1vw,0.85rem);line-height:2;color:var(--text-secondary);border-top:1px solid rgba(0,212,255,0.12);padding-top:14px;text-align:justify;}
+#final-restart{display:block;margin:20px auto 0;padding:10px 32px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);border-radius:8px;color:var(--accent-blue);font-family:var(--font-main);font-size:clamp(0.7rem,1vw,0.85rem);font-weight:700;cursor:pointer;transition:all 0.3s;}
+#final-restart:hover{background:rgba(0,212,255,0.18);}
 
-/* ===== INTRO SCREEN ===== */
-#intro-screen{
-  position:fixed;inset:0;z-index:5000;
-  display:flex;align-items:center;justify-content:flex-start;
-  flex-direction:column;text-align:center;
-  overflow:hidden;
-  padding-top:8vh;
-}
+/* INTRO */
+#intro-screen{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:flex-start;flex-direction:column;text-align:center;overflow:hidden;padding-top:8vh;}
 #intro-screen.hidden{display:none;}
-#intro-bg{
-  position:absolute;inset:0;
-  background:url('https://images.unsplash.com/photo-1536599018102-9f803c140fc1?q=80&w=1920&auto=format&fit=crop') center center/cover no-repeat;
-  animation:introBgPan 30s ease-in-out infinite alternate;
-}
-@keyframes introBgPan{
-  0%{transform:scale(1.1) translate(0,0);}
-  100%{transform:scale(1.15) translate(-2%,-1%);}
-}
-#intro-bg-overlay{
-  position:absolute;inset:0;
-  background:
-    radial-gradient(ellipse at 50% 30%, rgba(0,30,60,0.5) 0%, transparent 60%),
-    radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.95) 0%, transparent 50%),
-    linear-gradient(180deg, rgba(0,5,15,0.7) 0%, rgba(0,10,30,0.92) 60%, rgba(0,0,0,0.98) 100%);
-}
-/* Animated light rays */
-#intro-rays{
-  position:absolute;inset:0;overflow:hidden;pointer-events:none;
-}
-#intro-rays::before,#intro-rays::after{
-  content:'';position:absolute;
-  top:-50%;left:50%;
-  width:2px;height:200%;
-  background:linear-gradient(180deg,transparent,rgba(0,212,255,0.1),transparent);
-  transform-origin:top center;
-  animation:rayRotate 20s linear infinite;
-}
+#intro-bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1536599018102-9f803c140fc1?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat;animation:introBgPan 30s ease-in-out infinite alternate;}
+@keyframes introBgPan{0%{transform:scale(1.1);}100%{transform:scale(1.15) translate(-2%,-1%);}}
+#intro-bg-overlay{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(0,30,60,0.5),transparent 60%),radial-gradient(ellipse at 50% 100%,rgba(0,0,0,0.95),transparent 50%),linear-gradient(180deg,rgba(0,5,15,0.7),rgba(0,10,30,0.92) 60%,rgba(0,0,0,0.98));}
+#intro-rays{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+#intro-rays::before,#intro-rays::after{content:'';position:absolute;top:-50%;left:50%;width:2px;height:200%;background:linear-gradient(180deg,transparent,rgba(0,212,255,0.1),transparent);transform-origin:top center;animation:rayRotate 20s linear infinite;}
 #intro-rays::after{animation-delay:-10s;opacity:0.5;}
 @keyframes rayRotate{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
-#intro-grid{
-  position:absolute;inset:0;
-  background-image:
-    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-  background-size:60px 60px;
-  animation:gridMove 20s linear infinite;
-}
+#intro-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:60px 60px;animation:gridMove 20s linear infinite;}
 @keyframes gridMove{from{transform:translateY(0);}to{transform:translateY(60px);}}
-#intro-content{position:relative;z-index:2;padding:clamp(20px,5vw,60px);max-width:750px;}
-#intro-frame{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
-#intro-frame::before{
-  content:'';position:absolute;
-  top:6%;left:6%;right:6%;bottom:6%;
-  border:1px solid rgba(0,212,255,0.15);
-  border-radius:20px;
-  animation:framePulse 4s ease-in-out infinite;
-}
-@keyframes framePulse{0%,100%{opacity:0.5;}50%{opacity:1;box-shadow:0 0 30px rgba(0,212,255,0.1);}}
-.intro-badge{
-  font-size:clamp(0.65rem,0.95vw,0.78rem);
-  color:var(--accent-gold);
-  border:1px solid rgba(255,215,0,0.25);
-  padding:5px 18px;border-radius:14px;
-  margin-bottom:20px;display:inline-block;
-  background:rgba(255,215,0,0.05);letter-spacing:3px;
-}
-#intro-screen h1{
-  font-family:var(--font-serif);
-  font-size:clamp(1.5rem,4.5vw,2.8rem);
-  font-weight:900;
-  background:linear-gradient(90deg,var(--accent-blue),var(--accent-gold),var(--accent-blue));
-  background-size:200% 100%;
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  animation:introShimmer 4s linear infinite;
-  margin-bottom:20px;line-height:1.5;
-}
+#intro-content{position:relative;z-index:2;padding:clamp(16px,4vw,50px);max-width:700px;}
+#intro-frame{position:absolute;inset:0;z-index:1;pointer-events:none;}
+#intro-frame::before{content:'';position:absolute;top:6%;left:6%;right:6%;bottom:6%;border:1px solid rgba(0,212,255,0.15);border-radius:20px;animation:framePulse 4s ease-in-out infinite;}
+@keyframes framePulse{0%,100%{opacity:0.5;}50%{opacity:1;}}
+.intro-badge{font-size:clamp(0.58rem,0.88vw,0.72rem);color:var(--accent-gold);border:1px solid rgba(255,215,0,0.25);padding:4px 16px;border-radius:12px;margin-bottom:18px;display:inline-block;background:rgba(255,215,0,0.05);letter-spacing:3px;}
+#intro-screen h1{font-family:var(--font-serif);font-size:clamp(1.3rem,4vw,2.5rem);font-weight:900;background:linear-gradient(90deg,var(--accent-blue),var(--accent-gold),var(--accent-blue));background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:introShimmer 4s linear infinite;margin-bottom:18px;line-height:1.5;}
 @keyframes introShimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
-#intro-screen .intro-sub{
-  font-size:clamp(0.82rem,1.2vw,1.0rem);
-  color:var(--text-secondary);line-height:2.2;
-  margin-bottom:36px;
-}
-.intro-divider{
-  width:100px;height:1px;margin:0 auto 28px;
-  background:linear-gradient(90deg,transparent,var(--accent-blue),transparent);
-}
-#intro-start{
-  padding:16px 56px;
-  background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(255,215,0,0.1));
-  border:1px solid rgba(0,212,255,0.45);border-radius:12px;
-  color:#fff;font-family:var(--font-main);
-  font-size:clamp(0.9rem,1.3vw,1.08rem);font-weight:700;
-  cursor:pointer;transition:all 0.4s;letter-spacing:3px;
-  position:relative;overflow:hidden;
-}
-#intro-start::before{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);
-  transform:translateX(-100%);
-  transition:transform 0.6s;
-}
+#intro-screen .intro-sub{font-size:clamp(0.72rem,1.1vw,0.92rem);color:var(--text-secondary);line-height:2.1;margin-bottom:30px;}
+.intro-divider{width:90px;height:1px;margin:0 auto 24px;background:linear-gradient(90deg,transparent,var(--accent-blue),transparent);}
+#intro-start{padding:14px 48px;background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(255,215,0,0.1));border:1px solid rgba(0,212,255,0.45);border-radius:10px;color:#fff;font-family:var(--font-main);font-size:clamp(0.82rem,1.2vw,1rem);font-weight:700;cursor:pointer;transition:all 0.4s;letter-spacing:3px;position:relative;overflow:hidden;}
+#intro-start::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);transform:translateX(-100%);transition:transform 0.6s;}
 #intro-start:hover::before{transform:translateX(100%);}
-#intro-start:hover{
-  background:linear-gradient(135deg,rgba(0,212,255,0.4),rgba(255,215,0,0.2));
-  box-shadow:0 0 50px rgba(0,212,255,0.25);transform:scale(1.05);
-}
-.intro-footnote{
-  margin-top:24px;
-  font-size:clamp(0.62rem,0.88vw,0.75rem);
-  color:rgba(160,176,192,0.5);
-}
+#intro-start:hover{background:linear-gradient(135deg,rgba(0,212,255,0.4),rgba(255,215,0,0.2));box-shadow:0 0 40px rgba(0,212,255,0.2);transform:scale(1.04);}
+.intro-footnote{margin-top:20px;font-size:clamp(0.55rem,0.8vw,0.68rem);color:rgba(160,176,192,0.5);}
 
-/* ===== CINEMATIC INTRO TRANSITION ===== */
-#intro-transition{
-  position:fixed;inset:0;z-index:6000;
-  background:#000;
-  display:none;
-  flex-direction:column;
-  align-items:center;justify-content:flex-start;
-  padding-top:18vh;
-}
+/* INTRO TRANSITION */
+#intro-transition{position:fixed;inset:0;z-index:6000;background:#000;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:15%;}
 #intro-transition.active{display:flex;}
-.intro-trans-line{
-  width:0;height:1px;
-  background:linear-gradient(90deg,transparent,var(--accent-blue),var(--accent-gold),var(--accent-blue),transparent);
-  animation:lineExpand 1.5s 0.3s ease-out forwards;
-}
+.intro-trans-line{width:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent-blue),var(--accent-gold),var(--accent-blue),transparent);animation:lineExpand 1.5s 0.3s ease-out forwards;}
 @keyframes lineExpand{from{width:0;}to{width:80%;}}
-.intro-trans-text{
-  font-family:var(--font-serif);
-  font-size:clamp(0.9rem,1.5vw,1.2rem);
-  color:var(--accent-blue);
-  margin-top:24px;
-  opacity:0;
-  animation:transTextIn 1s 0.8s ease-out forwards;
-  letter-spacing:4px;
-}
+.intro-trans-text{font-family:var(--font-serif);font-size:clamp(0.82rem,1.4vw,1.1rem);color:var(--accent-blue);margin-top:20px;opacity:0;animation:transTextIn 1s 0.8s ease-out forwards;letter-spacing:4px;}
 @keyframes transTextIn{from{opacity:0;letter-spacing:8px;}to{opacity:1;letter-spacing:4px;}}
-.intro-trans-sub{
-  font-size:clamp(0.72rem,1vw,0.85rem);
-  color:var(--text-secondary);
-  margin-top:12px;
-  opacity:0;
-  animation:transTextIn 1s 1.3s ease-out forwards;
-}
-.intro-trans-loading{
-  margin-top:30px;
-  width:200px;height:2px;
-  background:rgba(255,255,255,0.1);
-  border-radius:1px;
-  overflow:hidden;
-  opacity:0;
-  animation:transTextIn 0.5s 1.8s ease-out forwards;
-}
-.intro-trans-loading-bar{
-  height:100%;width:0;
-  background:linear-gradient(90deg,var(--accent-blue),var(--accent-gold));
-  animation:loadingBar 2s 2s ease-in-out forwards;
-}
+.intro-trans-sub{font-size:clamp(0.65rem,0.95vw,0.78rem);color:var(--text-secondary);margin-top:10px;opacity:0;animation:transTextIn 1s 1.3s ease-out forwards;}
+.intro-trans-loading{margin-top:26px;width:180px;height:2px;background:rgba(255,255,255,0.1);border-radius:1px;overflow:hidden;opacity:0;animation:transTextIn 0.5s 1.8s ease-out forwards;}
+.intro-trans-loading-bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent-blue),var(--accent-gold));animation:loadingBar 2s 2s ease-in-out forwards;}
 @keyframes loadingBar{from{width:0;}to{width:100%;}}
 
-/* Touch drag ghost */
-.drag-ghost{
-  position:fixed;pointer-events:none;z-index:9999;
-  padding:8px 16px;
-  background:rgba(0,212,255,0.12);border:1px solid var(--accent-blue);
-  border-radius:6px;font-size:0.78rem;font-weight:700;color:var(--accent-blue);
-  backdrop-filter:blur(8px);transform:translate(-50%,-50%);white-space:nowrap;
-}
+.drag-ghost{position:fixed;pointer-events:none;z-index:9999;padding:6px 14px;background:rgba(0,212,255,0.12);border:1px solid var(--accent-blue);border-radius:5px;font-size:0.72rem;font-weight:700;color:var(--accent-blue);backdrop-filter:blur(8px);transform:translate(-50%,-50%);white-space:nowrap;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.12);border-radius:2px;}
 
-/* Scrollbar */
-::-webkit-scrollbar{width:5px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.12);border-radius:2px;}
-
-/* ===== RESPONSIVE ===== */
-@media(max-width:960px){
+@media(max-width:768px){
   #app{height:auto;min-height:100vh;min-height:100dvh;overflow:visible;}
-  #main-content{overflow:visible;}
+  #main-content{grid-template-columns:1fr;grid-template-rows:auto auto;overflow:visible;}
   #cards-section{max-height:none;}
   #cards-grid{flex-direction:row;flex-wrap:wrap;overflow-y:visible;}
-  .project-card{flex:1 1 calc(50% - 4px);min-width:150px;}
-  .card-desc{-webkit-line-clamp:2;}
+  .project-card{flex:1 1 calc(50% - 4px);min-width:130px;}
   #action-log{max-height:none;}
-}
-@media(max-width:768px){
-  #hud{flex-direction:column;align-items:stretch;gap:6px;padding:8px 12px;}
+  #hud{flex-direction:column;align-items:stretch;gap:5px;padding:6px 10px;}
   #hud-left{justify-content:center;}
   #hud-right{margin-left:0;justify-content:center;}
   #hud-bars{flex-direction:column;justify-content:stretch;gap:4px;}
   .hud-bar-group{max-width:none;min-width:0;}
 }
-@media(max-width:600px){
-  .project-card{flex:1 1 100%;}
-}
-/* Landscape short screens */
-@media(max-height:700px){
-  #hud{padding:4px 10px;gap:4px;}
-  .hud-bar-track{height:6px;}
-  #map-title{margin-bottom:3px;font-size:0.78rem;}
-  .map-zone{padding:4px 6px;}
-  .map-zone-name{font-size:0.68rem;}
-  .map-zone-sub{font-size:0.52rem;}
-  #log-title{margin-bottom:2px;padding-bottom:2px;font-size:0.68rem;}
-  .log-entry{padding:3px 6px;font-size:0.58rem;}
-  #action-log{max-height:clamp(60px,10vh,90px);padding:4px 8px;}
-  #cards-title{font-size:0.68rem;margin-bottom:3px;}
-  .card-title{font-size:0.65rem;}
-  .card-desc{font-size:0.52rem;-webkit-line-clamp:1;}
-  .card-hectare{font-size:0.5rem;padding:1px 4px;}
-  .card-drag-hint{display:none;}
-}
+@media(max-width:420px){.project-card{flex:1 1 100%;}}
 </style>
 </head>
 <body>
+<div id="bg-layer"></div><div id="bg-overlay"></div><div id="scanline"></div><canvas id="particle-canvas"></canvas>
 
-<div id="bg-layer"></div>
-<div id="bg-overlay"></div>
-<div id="scanline"></div>
-<canvas id="particle-canvas"></canvas>
-
-<!-- INTRO -->
 <div id="intro-screen">
-  <div id="intro-bg"></div>
-  <div id="intro-bg-overlay"></div>
-  <div id="intro-rays"></div>
-  <div id="intro-grid"></div>
-  <div id="intro-frame"></div>
+  <div id="intro-bg"></div><div id="intro-bg-overlay"></div><div id="intro-rays"></div><div id="intro-grid"></div><div id="intro-frame"></div>
   <div id="intro-content">
     <div class="intro-badge">STRATEGIC PLANNING SIMULATION</div>
-    <h1>香港2030+<br>策略空間規劃模擬器</h1>
+    <h1>香港2030+<br>城市規劃模擬器</h1>
     <div class="intro-divider"></div>
-    <p class="intro-sub">
-      本模擬器以《香港2030+：跨越2030年的規劃遠景與策略》報告為藍本，
-      引導閣下以城市規劃師的身份，就香港長遠土地供應策略中
-      六項核心發展項目作出關鍵抉擇。<br><br>
-      在五個規劃階段內，閣下須在經濟競爭力、環境與文化抗禦力、
-      以及社會民生與宜居度三大維度之間審慎權衡取捨，
-      冀望達致「超越適時和適量」的規劃願景。
-    </p>
+    <p class="intro-sub">本模擬器以《香港2030+：跨越2030年的規劃遠景與策略》報告為藍本，引導閣下以城市規劃師的身份，就香港長遠土地供應策略中六項核心發展項目作出關鍵的戰略部署。<br><br>在五個規劃階段內，閣下須在經濟競爭力、環境與文化抗禦力、以及社會民生與宜居度三大維度之間審慎權衡取捨，冀望達致「宜居、具競爭力及可持續發展」的規劃願景。</p>
     <button id="intro-start">啟動模擬</button>
-    <div class="intro-footnote">基於《香港2030+》報告 · 2019-2048 年土地供應策略</div>
+    <div class="intro-footnote">基於《香港2030+》最終報告 · 2019-2048 年土地供應策略</div>
   </div>
 </div>
 
-<!-- INTRO CINEMATIC TRANSITION -->
-<div id="intro-transition">
-  <div class="intro-trans-line"></div>
-  <div class="intro-trans-text">系統初始化中</div>
-  <div class="intro-trans-sub">INITIALIZING PLANNING SYSTEM</div>
-  <div class="intro-trans-loading"><div class="intro-trans-loading-bar"></div></div>
-</div>
+<div id="intro-transition"><div class="intro-trans-line"></div><div class="intro-trans-text">系統初始化中</div><div class="intro-trans-sub">INITIALIZING PLANNING SYSTEM</div><div class="intro-trans-loading"><div class="intro-trans-loading-bar"></div></div></div>
+<div id="round-screen"><div class="round-phase-label">PLANNING PHASE</div><div class="round-phase-number" id="round-number">1</div><div class="round-phase-subtitle" id="round-subtitle">第一規劃階段</div><div class="round-instruction">請從戰略項目庫中選取一項發展項目，拖放至地圖區域</div></div>
 
-<!-- ROUND SCREEN -->
-<div id="round-screen">
-  <div class="round-phase-label">PLANNING PHASE</div>
-  <div class="round-phase-number" id="round-number">1</div>
-  <div class="round-phase-subtitle" id="round-subtitle">第一規劃階段</div>
-  <div class="round-instruction">請從戰略項目庫中選取一項發展項目，拖放至地圖區域</div>
-</div>
-
-<!-- APP -->
 <div id="app">
   <div id="hud" class="glass">
-    <div id="hud-left">
-      <div id="hud-title">香港2030+ 策略空間規劃模擬器</div>
-      <div id="hud-phase">規劃階段 1 / 5</div>
-    </div>
-    <div id="hud-right">
-      <button id="rules-btn" onclick="toggleRules()">遊戲規則</button>
-    </div>
+    <div id="hud-left"><div id="hud-title">香港2030+ 策略空間規劃模擬器</div><div id="hud-phase">規劃階段 1 / 5</div></div>
+    <div id="hud-right"><button id="rules-btn" onclick="toggleRules()">遊戲規則</button></div>
     <div id="hud-bars">
-      <div class="hud-bar-group bar-econ">
-        <span class="hud-bar-label">經濟競爭力</span>
-        <div class="hud-bar-track"><div class="hud-bar-fill" id="bar-econ" style="width:50%"></div></div>
-        <span class="hud-bar-value" id="val-econ">50</span>
-      </div>
-      <div class="hud-bar-group bar-env">
-        <span class="hud-bar-label">環境抗禦力</span>
-        <div class="hud-bar-track"><div class="hud-bar-fill" id="bar-env" style="width:50%"></div></div>
-        <span class="hud-bar-value" id="val-env">50</span>
-      </div>
-      <div class="hud-bar-group bar-live">
-        <span class="hud-bar-label">社會宜居度</span>
-        <div class="hud-bar-track"><div class="hud-bar-fill" id="bar-live" style="width:50%"></div></div>
-        <span class="hud-bar-value" id="val-live">50</span>
-      </div>
+      <div class="hud-bar-group bar-econ"><span class="hud-bar-label">經濟競爭力</span><div class="hud-bar-track"><div class="hud-bar-fill" id="bar-econ" style="width:50%"></div></div><span class="hud-bar-value" id="val-econ">50</span></div>
+      <div class="hud-bar-group bar-env"><span class="hud-bar-label">環境抗禦力</span><div class="hud-bar-track"><div class="hud-bar-fill" id="bar-env" style="width:50%"></div></div><span class="hud-bar-value" id="val-env">50</span></div>
+      <div class="hud-bar-group bar-live"><span class="hud-bar-label">社會宜居度</span><div class="hud-bar-track"><div class="hud-bar-fill" id="bar-live" style="width:50%"></div></div><span class="hud-bar-value" id="val-live">50</span></div>
     </div>
   </div>
-
   <div id="main-content">
     <div id="map-container" class="glass">
       <div id="map-title">策略空間框架 — 核心發展區域</div>
       <div id="map-grid">
-        <div class="map-zone zone-victoria pulse" data-zone="victoria"
-             ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event,'victoria')">
-          <div class="map-zone-name">維港都會區</div>
-          <div class="map-zone-sub">核心商業區 · 城市更新</div>
-          <div id="placed-victoria"></div>
-          <div class="drop-indicator">拖放項目至此區</div>
-        </div>
-        <div class="map-zone zone-north pulse" data-zone="north"
-             ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event,'north')">
-          <div class="map-zone-name">北部都會區</div>
-          <div class="map-zone-sub">創科樞紐 · 邊境經濟帶</div>
-          <div id="placed-north"></div>
-          <div class="drop-indicator">拖放項目至此區</div>
-        </div>
-        <div class="map-zone zone-west pulse" data-zone="west"
-             ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event,'west')">
-          <div class="map-zone-name">西部經濟走廊</div>
-          <div class="map-zone-sub">物流 · 棕地重整</div>
-          <div id="placed-west"></div>
-          <div class="drop-indicator">拖放項目至此區</div>
-        </div>
-        <div class="map-zone zone-east pulse" data-zone="east"
-             ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event,'east')">
-          <div class="map-zone-name">東部知識及科技走廊</div>
-          <div class="map-zone-sub">教育 · 研發 · 科學園</div>
-          <div id="placed-east"></div>
-          <div class="drop-indicator">拖放項目至此區</div>
-        </div>
+        <div class="map-zone zone-victoria pulse" data-zone="victoria" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event,'victoria')"><div class="map-zone-name">維港都會區</div><div class="map-zone-sub">核心商業區 · 城市更新</div><div id="placed-victoria"></div><div class="drop-indicator">拖放項目至此區</div></div>
+        <div class="map-zone zone-north pulse" data-zone="north" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event,'north')"><div class="map-zone-name">北部都會區</div><div class="map-zone-sub">創科樞紐 · 邊境經濟帶</div><div id="placed-north"></div><div class="drop-indicator">拖放項目至此區</div></div>
+        <div class="map-zone zone-west pulse" data-zone="west" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event,'west')"><div class="map-zone-name">西部經濟走廊</div><div class="map-zone-sub">物流 · 棕地重整</div><div id="placed-west"></div><div class="drop-indicator">拖放項目至此區</div></div>
+        <div class="map-zone zone-east pulse" data-zone="east" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event,'east')"><div class="map-zone-name">東部知識及科技走廊</div><div class="map-zone-sub">教育 · 研發 · 科學園</div><div id="placed-east"></div><div class="drop-indicator">拖放項目至此區</div></div>
       </div>
     </div>
     <div id="cards-section" class="glass">
-      <div id="cards-title">戰略項目庫 — 將項目拖放至地圖區域（每回合部署一項）</div>
+      <div id="cards-title">戰略項目庫 — 拖放至地圖</div>
       <div id="cards-grid"></div>
     </div>
   </div>
-
-  <div id="action-log" class="glass">
-    <div id="log-title">行動紀錄</div>
-    <div id="log-entries">
-      <div class="log-entry">系統初始化完成。三大指數均為 50，等待閣下的策略部署。</div>
-    </div>
-  </div>
+  <div id="action-log" class="glass"><div id="log-title">行動紀錄</div><div id="log-entries"><div class="log-entry">系統初始化完成。三大指數均為 50，等待閣下的策略部署。</div></div></div>
 </div>
 
-<!-- MODAL -->
-<div id="modal-overlay">
-  <div id="modal-box">
-    <div id="modal-header">
-      <div id="modal-project-title"></div>
-      <div id="modal-project-bg"></div>
-    </div>
-    <div id="modal-hearing-title">公眾諮詢大會 — 持份者角力</div>
-    <div id="stakeholders-container"></div>
-    <div id="policy-choices">
-      <div id="policy-choices-title">策略抉擇 — 請審慎決斷</div>
-    </div>
-  </div>
-</div>
-
-<!-- RULES MODAL -->
-<div id="rules-overlay">
-  <div id="rules-box">
-    <h2>遊戲規則與操作指引</h2>
-    <h3>一、模擬器背景</h3>
-    <p>本模擬器以《香港2030+：跨越2030年的規劃遠景與策略》報告為藍本。閣下將以城市規劃師的身份，在五個規劃階段內就六項核心發展項目作出關鍵的政策抉擇。</p>
-    <h3>二、核心數值系統</h3>
-    <ul>
-      <li><strong style="color:#ffd700">經濟競爭力</strong> — 反映香港作為國際金融、商貿及創科中心的綜合競爭優勢。</li>
-      <li><strong style="color:#00ff88">環境與文化抗禦力</strong> — 衡量自然生態、海洋資源、鄉郊文化地景的保育狀況。</li>
-      <li><strong style="color:#00d4ff">社會民生與宜居度</strong> — 涵蓋公營房屋供應、社區網絡、居民生活質素等維度。</li>
-    </ul>
-    <p>三項指數初始值均為 50，範圍為 0 至 100。</p>
-    <h3>三、操作方式</h3>
-    <ul>
-      <li>每個規劃階段，請從下方「戰略項目庫」中選取一張項目卡片，將其拖放至中央地圖的任意區域。</li>
-      <li>拖放成功後，系統將自動開啟「公眾諮詢大會」，展示持份者的觀點角力。</li>
-      <li>閣下須在兩個政策選項中擇其一，每個選項將對三大指數產生不同影響。</li>
-      <li>完成五個階段後，系統將根據三大指數的最終數值生成綜合評估報告。</li>
-    </ul>
-    <h3>四、策略提示</h3>
-    <p>六項發展項目中，閣下在五個階段內僅能部署五項，須審慎取捨。任何單一維度的過度傾斜皆可能導致結構性失衡，建議在經濟效率、環境公義與社會公平之間尋求動態平衡。</p>
-    <button id="rules-close" onclick="toggleRules()">明白了</button>
-  </div>
-</div>
-
-<!-- TRANSITION -->
-<div id="transition-screen">
-  <div id="transition-text"></div>
-  <div id="transition-sub"></div>
-</div>
-
-<!-- FINAL -->
-<div id="final-overlay">
-  <div id="final-box"></div>
-</div>
+<div id="modal-overlay"><div id="modal-box"><div id="modal-header"><div id="modal-project-title"></div><div id="modal-project-bg"></div></div><div id="modal-hearing-title">公眾諮詢大會 — 持份者角力</div><div id="stakeholders-container"></div><div id="policy-choices"><div id="policy-choices-title">策略抉擇 — 請審慎決斷</div></div></div></div>
+<div id="rules-overlay"><div id="rules-box"><h2>遊戲規則與操作指引</h2><h3>一、模擬器背景</h3><p>本模擬器以《香港2030+：跨越2030年的規劃遠景與策略》最終報告為藍本。閣下將以城市規劃師的身份，在五個規劃階段內就六項核心發展項目作出關鍵的政策抉擇。</p><h3>二、核心數值系統</h3><ul><li><strong style="color:#ffd700">經濟競爭力</strong> — 反映香港作為國際金融、商貿及創科中心的競爭優勢。</li><li><strong style="color:#00ff88">環境與文化抗禦力</strong> — 衡量自然生態、鄉郊文化地景的保育狀況。</li><li><strong style="color:#00d4ff">社會民生與宜居度</strong> — 涵蓋房屋供應、社區網絡、居民生活質素。</li></ul><h3>三、操作方式</h3><ul><li>每階段從項目庫拖放一張卡片至地圖任意區域。</li><li>不同項目放到不同區域會觸發完全不同的戰略情境。</li><li>閣下須在兩個政策選項中擇其一。</li><li>完成五階段後生成綜合評估報告。</li></ul><h3>四、策略提示</h3><p>六項項目中僅能部署五項。每個項目放在不同區域代表不同的戰略轉移方向，沒有絕對的對錯，只有取捨。</p><button id="rules-close" onclick="toggleRules()">明白了</button></div></div>
+<div id="transition-screen"><div id="transition-text"></div><div id="transition-sub"></div></div>
+<div id="final-overlay"><div id="final-box"></div></div>
 
 <script>
 // ===== SVG AVATARS =====
-const avatarSVGs = {
-  'kauyi_0': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="suit1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2a2a3a"/><stop offset="100%" stop-color="#1a1a28"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="#1a1a2e"/><ellipse cx="50" cy="78" rx="32" ry="22" fill="url(#suit1)"/><rect x="42" y="64" width="16" height="8" rx="2" fill="#1a1a28"/><polygon points="50,62 46,72 54,72" fill="#c0c0c0" opacity="0.6"/><line x1="50" y1="62" x2="50" y2="72" stroke="#888" stroke-width="0.5"/><rect x="38" y="56" width="24" height="4" rx="2" fill="#f5f5f5"/><circle cx="50" cy="36" r="18" fill="#f0d5b0"/><ellipse cx="50" cy="26" rx="19" ry="12" fill="#2a2a2a"/><rect x="31" y="20" width="38" height="10" rx="2" fill="#1a1a1a"/><ellipse cx="41" cy="36" rx="2.5" ry="2" fill="#2a2a2a"/><ellipse cx="59" cy="36" rx="2.5" ry="2" fill="#2a2a2a"/><ellipse cx="41" cy="36" rx="1.2" ry="1.2" fill="#111"/><ellipse cx="59" cy="36" rx="1.2" ry="1.2" fill="#111"/><line x1="37" y1="32" x2="45" y2="33" stroke="#3a3a3a" stroke-width="1.2"/><line x1="55" y1="33" x2="63" y2="32" stroke="#3a3a3a" stroke-width="1.2"/><path d="M46 42 Q50 45 54 42" fill="none" stroke="#a0705a" stroke-width="1"/><path d="M47 49 Q50 50.5 53 49" fill="none" stroke="#c08070" stroke-width="1.2"/><rect x="35" y="34" width="12" height="5" rx="2.5" fill="none" stroke="#888" stroke-width="0.6" opacity="0.5"/><rect x="53" y="34" width="12" height="5" rx="2.5" fill="none" stroke="#888" stroke-width="0.6" opacity="0.5"/></svg>`,
-  'kauyi_1': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#1a1a2e"/><ellipse cx="50" cy="80" rx="30" ry="20" fill="#4a6a5a"/><rect x="40" y="62" width="20" height="6" rx="2" fill="#3a5a4a"/><circle cx="50" cy="36" r="18" fill="#f0d0a8"/><ellipse cx="50" cy="22" rx="20" ry="14" fill="#2a2a2a"/><path d="M30 28 Q32 16 50 14 Q68 16 70 28 Q68 22 50 20 Q32 22 30 28" fill="#1a1a1a"/><ellipse cx="42" cy="36" rx="2.2" ry="2" fill="#2a2a2a"/><ellipse cx="58" cy="36" rx="2.2" ry="2" fill="#2a2a2a"/><ellipse cx="42" cy="36" rx="1" ry="1" fill="#111"/><ellipse cx="58" cy="36" rx="1" ry="1" fill="#111"/><path d="M44 33 Q42 31 39 32" fill="none" stroke="#5a4a3a" stroke-width="1"/><path d="M56 33 Q58 31 61 32" fill="none" stroke="#5a4a3a" stroke-width="1"/><path d="M47 43 Q50 44.5 53 43" fill="none" stroke="#a07060" stroke-width="0.8"/><path d="M46 49 Q50 51.5 54 49" fill="none" stroke="#b07868" stroke-width="1.2"/></svg>`,
-  'kauyi_2': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#1a2a1e"/><ellipse cx="50" cy="80" rx="30" ry="20" fill="#2a4a3a"/><rect x="42" y="64" width="16" height="6" rx="2" fill="#1a3a2a"/><circle cx="50" cy="36" r="18" fill="#e8c8a0"/><ellipse cx="50" cy="22" rx="18" ry="12" fill="#4a3a2a"/><path d="M32 26 Q35 14 50 12 Q65 14 68 26" fill="#3a2a1a"/><circle cx="42" cy="35" r="6" fill="none" stroke="#8a9aaa" stroke-width="1.5"/><circle cx="58" cy="35" r="6" fill="none" stroke="#8a9aaa" stroke-width="1.5"/><line x1="48" y1="35" x2="52" y2="35" stroke="#8a9aaa" stroke-width="1"/><line x1="36" y1="34" x2="32" y2="32" stroke="#8a9aaa" stroke-width="1"/><line x1="64" y1="34" x2="68" y2="32" stroke="#8a9aaa" stroke-width="1"/><ellipse cx="42" cy="35" rx="1.8" ry="1.8" fill="#2a2a2a"/><ellipse cx="58" cy="35" rx="1.8" ry="1.8" fill="#2a2a2a"/><ellipse cx="42" cy="35" rx="0.9" ry="0.9" fill="#111"/><ellipse cx="58" cy="35" rx="0.9" ry="0.9" fill="#111"/><path d="M47 43 Q50 44 53 43" fill="none" stroke="#a07060" stroke-width="0.8"/><path d="M46 49 Q50 51 54 49" fill="none" stroke="#b07868" stroke-width="1"/><path d="M48 55 Q50 56 52 55" fill="none" stroke="#a08070" stroke-width="0.6"/></svg>`,
-  'santinlmz_0': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#1a1a30"/><ellipse cx="50" cy="80" rx="30" ry="20" fill="#2a2a4a"/><rect x="40" y="60" width="20" height="8" rx="3" fill="#3a3a5a"/><circle cx="50" cy="36" r="18" fill="#f2d8b5"/><path d="M32 30 Q34 16 50 14 Q66 16 68 30 Q66 18 50 16 Q34 18 32 30" fill="#2a2a3a"/><path d="M32 30 L35 26 Q50 22 65 26 L68 30" fill="#1a1a2a"/><ellipse cx="42" cy="36" rx="2.2" ry="1.8" fill="#2a2a3a"/><ellipse cx="58" cy="36" rx="2.2" ry="1.8" fill="#2a2a3a"/><ellipse cx="42" cy="36" rx="1" ry="1" fill="#111"/><ellipse cx="58" cy="36" rx="1" ry="1" fill="#111"/><path d="M47 43 Q50 44 53 43" fill="none" stroke="#a07060" stroke-width="0.8"/><path d="M44 49 Q50 52 56 49" fill="none" stroke="#c08070" stroke-width="1.2"/></svg>`,
-  'santinlmz_1': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#2a2a1a"/><ellipse cx="50" cy="80" rx="30" ry="20" fill="#6a6a4a"/><rect x="40" y="62" width="20" height="6" rx="2" fill="#5a5a3a"/><circle cx="50" cy="36" r="18" fill="#d8b888"/><path d="M30 24 Q34 10 50 8 Q66 10 70 24" fill="#5a4a3a"/><ellipse cx="50" cy="24" rx="22" ry="8" fill="#4a3a2a"/><ellipse cx="42" cy="36" rx="2" ry="1.8" fill="#3a3a2a"/><ellipse cx="58" cy="36" rx="2" ry="1.8" fill="#3a3a2a"/><ellipse cx="42" cy="36" rx="0.9" ry="0.9" fill="#111"/><ellipse cx="58" cy="36" rx="0.9" ry="0.9" fill="#111"/><path d="M38 33 Q42 31 46 33" fill="none" stroke="#5a4a3a" stroke-width="1.2"/><path d="M54 33 Q58 31 62 33" fill="none" stroke="#5a4a3a" stroke-width="1.2"/><path d="M47 43 Q50 45 53 43" fill="none" stroke="#907060" stroke-width="0.8"/><path d="M46 49 Q50 50 54 49" fill="none" stroke="#a07868" stroke-width="1.2"/><path d="M40 52 Q44 54 47 52" fill="none" stroke="#c0a888" stroke-width="0.6"/><path d="M53 52 Q56 54 60 52" fill="none" stroke="#c0a888" stroke-width="0.6"/></svg>`,
-  'hsitp_0': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#1a1a30"/><ellipse cx="50" cy="80" rx="30" ry="20" fill="#2a3a5a"/><rect x="42" y="62" width="16" height="6" rx="2" fill="#1a2a4a"/><circle cx="50" cy="36" r="17" fill="#f5dbc0"/><path d="M30 32 Q33 14 50 12 Q67 14 70 32 Q68 18 50 16 Q32 18 30 32" fill="#1a1a2a"/><path d="M30 32 Q30 28 35 30 L65 30 Q70 28 70 32" fill="#0a0a1a"/><ellipse cx="43" cy="36" rx="2" ry="1.8" fill="#2a2a3a"/><ellipse cx="57" cy="36" rx="2" ry="1.8" fill="#2a2a3a"/><ellipse cx="43" cy="36" rx="0.9" ry="0.9" fill="#111"/><ellipse cx="57" cy="36" rx="0.9" ry="0.9" fill="#111"/><path d="M40 33 Q43 32 46 33.5" fill="none" stroke="#4a3a3a" stroke-width="0.8"/><path d="M54 33.5 Q57 32 60 33" fill="none" stroke="#4a3a3a" stroke-width="0.8"/><path d="M47 42 Q50 43 53 42" fill="none" stroke="#a07060" stroke-width="0.7"/><path d="M45 48 Q50 51 55 48" fill="none" stroke="#c07060" stroke-width="1.2"/><circle cx="42" cy="44" r="3" fill="#f5c0b0" opacity="0.3"/><circle cx="58" cy="44" r="3" fill="#f5c0b0" opacity="0.3"/></svg>`,
-  'hsitp_1': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#1a2a1a"/><ellipse cx="50" cy="80" rx="30" ry="20" fill="#3a5a3a"/><rect x="40" y="62" width="20" height="6" rx="2" fill="#2a4a2a"/><circle cx="50" cy="36" r="17" fill="#e0c098"/><path d="M33 28 Q36 14 50 12 Q64 14 67 28" fill="#4a5a3a"/><ellipse cx="50" cy="20" rx="20" ry="10" fill="#3a4a2a"/><ellipse cx="43" cy="36" rx="2" ry="1.8" fill="#2a3a2a"/><ellipse cx="57" cy="36" rx="2" ry="1.8" fill="#2a3a2a"/><ellipse cx="43" cy="36" rx="1" ry="1" fill="#111"/><ellipse cx="57" cy="36" rx="1" ry="1" fill="#111"/><path d="M39 33 Q43 32 46 33.5" fill="none" stroke="#5a4a3a" stroke-width="1"/><path d="M54 33.5 Q57 32 61 33" fill="none" stroke="#5a4a3a" stroke-width="1"/><path d="M47 42 Q50 43.5 53 42" fill="none" stroke="#907060" stroke-width="0.8"/><path d="M46 49 Q50 51 54 49" fill="none" stroke="#a07868" stroke-width="1"/></svg>`,
-  'maliushui_0': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#1a1a30"/><ellipse cx="50" cy="80" rx="30" ry="20" fill="#f0f0f0"/><rect x="42" y="64" width="16" height="5" rx="2" fill="#e0e0e0"/><circle cx="50" cy="36" r="17" fill="#f5ddc5"/><path d="M30 34 Q32 12 50 10 Q68 12 70 34 Q67 16 50 14 Q33 16 30 34" fill="#1a1a2a"/><path d="M30 34 L28 38 M70 34 L72 38" fill="none" stroke="#1a1a2a" stroke-width="2"/><circle cx="43" cy="35" r="5.5" fill="none" stroke="#6a6a8a" stroke-width="1.2"/><circle cx="57" cy="35" r="5.5" fill="none" stroke="#6a6a8a" stroke-width="1.2"/><line x1="48.5" y1="35" x2="51.5" y2="35" stroke="#6a6a8a" stroke-width="0.8"/><ellipse cx="43" cy="35" rx="1.5" ry="1.5" fill="#2a2a3a"/><ellipse cx="57" cy="35" rx="1.5" ry="1.5" fill="#2a2a3a"/><ellipse cx="43" cy="35" rx="0.7" ry="0.7" fill="#111"/><ellipse cx="57" cy="35" rx="0.7" ry="0.7" fill="#111"/><path d="M47 42 Q50 43 53 42" fill="none" stroke="#a07060" stroke-width="0.6"/><path d="M46 48 Q50 50.5 54 48" fill="none" stroke="#c07868" stroke-width="1"/><circle cx="43" cy="43" r="2.5" fill="#f5b8a8" opacity="0.25"/><circle cx="57" cy="43" r="2.5" fill="#f5b8a8" opacity="0.25"/></svg>`,
-  'maliushui_1': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#2a1a2a"/><ellipse cx="50" cy="80" rx="30" ry="20" fill="#6a4a5a"/><rect x="42" y="64" width="16" height="5" rx="2" fill="#5a3a4a"/><circle cx="50" cy="36" r="17" fill="#f0d0b0"/><path d="M30 30 Q34 12 50 10 Q66 12 70 30" fill="#3a2a1a"/><path d="M30 30 Q28 36 30 42 M70 30 Q72 36 70 42" fill="none" stroke="#3a2a1a" stroke-width="2.5"/><ellipse cx="43" cy="36" rx="2" ry="1.8" fill="#3a2a2a"/><ellipse cx="57" cy="36" rx="2" ry="1.8" fill="#3a2a2a"/><ellipse cx="43" cy="36" rx="0.9" ry="0.9" fill="#111"/><ellipse cx="57" cy="36" rx="0.9" ry="0.9" fill="#111"/><path d="M40 33 Q43 31.5 46 33" fill="none" stroke="#5a4a3a" stroke-width="0.9"/><path d="M54 33 Q57 31.5 60 33" fill="none" stroke="#5a4a3a" stroke-width="0.9"/><path d="M47 42 Q50 43.5 53 42" fill="none" stroke="#907060" stroke-width="0.7"/><path d="M46 49 Q50 50.5 54 49" fill="none" stroke="#a07868" stroke-width="1"/></svg>`,
-  'ntnewtown_0': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#1a2030"/><ellipse cx="50" cy="80" rx="30" ry="20" fill="#3a4a6a"/><rect x="42" y="64" width="16" height="5" rx="2" fill="#2a3a5a"/><circle cx="50" cy="36" r="17" fill="#f5dcc0"/><path d="M30 32 Q33 12 50 10 Q67 12 70 32" fill="#2a1a1a"/><path d="M30 32 Q28 40 32 48 M70 32 Q72 40 68 48" fill="none" stroke="#2a1a1a" stroke-width="2"/><ellipse cx="43" cy="36" rx="2.2" ry="1.8" fill="#2a2a3a"/><ellipse cx="57" cy="36" rx="2.2" ry="1.8" fill="#2a2a3a"/><ellipse cx="43" cy="36" rx="1" ry="1" fill="#111"/><ellipse cx="57" cy="36" rx="1" ry="1" fill="#111"/><path d="M40 33.5 Q43 32 46 34" fill="none" stroke="#4a3a3a" stroke-width="0.8"/><path d="M54 34 Q57 32 60 33.5" fill="none" stroke="#4a3a3a" stroke-width="0.8"/><path d="M47 42 Q50 43 53 42" fill="none" stroke="#a07060" stroke-width="0.6"/><path d="M45 48 Q50 51 55 48" fill="none" stroke="#c07868" stroke-width="1.2"/><circle cx="43" cy="43" r="2.5" fill="#f5b8a8" opacity="0.2"/><circle cx="57" cy="43" r="2.5" fill="#f5b8a8" opacity="0.2"/></svg>`,
-  'ntnewtown_1': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#1a2a1a"/><ellipse cx="50" cy="80" rx="30" ry="20" fill="#5a6a4a"/><rect x="40" y="62" width="20" height="6" rx="2" fill="#4a5a3a"/><circle cx="50" cy="36" r="17" fill="#d8b888"/><path d="M28 24 L72 24 Q68 18 50 14 Q32 18 28 24" fill="#7a6a4a"/><rect x="28" y="22" width="44" height="4" rx="2" fill="#6a5a3a"/><ellipse cx="43" cy="36" rx="2" ry="1.8" fill="#3a3a2a"/><ellipse cx="57" cy="36" rx="2" ry="1.8" fill="#3a3a2a"/><ellipse cx="43" cy="36" rx="0.9" ry="0.9" fill="#111"/><ellipse cx="57" cy="36" rx="0.9" ry="0.9" fill="#111"/><path d="M39 33 Q42 31.5 45 33" fill="none" stroke="#5a4a3a" stroke-width="1"/><path d="M55 33 Q58 31.5 61 33" fill="none" stroke="#5a4a3a" stroke-width="1"/><path d="M47 42 Q50 44 53 42" fill="none" stroke="#907060" stroke-width="0.8"/><path d="M46 49 Q50 50 54 49" fill="none" stroke="#a07868" stroke-width="1"/><path d="M38 50 Q42 53 46 50" fill="none" stroke="#c0a888" stroke-width="0.5"/><path d="M54 50 Q58 53 62 50" fill="none" stroke="#c0a888" stroke-width="0.5"/></svg>`,
-  'urbanrenewal_0': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#1a1a2e"/><ellipse cx="50" cy="80" rx="32" ry="22" fill="#2a2a40"/><rect x="42" y="64" width="16" height="7" rx="2" fill="#1a1a30"/><polygon points="50,62 47,71 53,71" fill="#aa3333" opacity="0.7"/><line x1="50" y1="62" x2="50" y2="71" stroke="#881111" stroke-width="0.5"/><rect x="38" y="58" width="24" height="3" rx="1.5" fill="#f0f0f0"/><circle cx="50" cy="36" r="17" fill="#f0d5b5"/><path d="M32 28 Q36 14 50 12 Q64 14 68 28" fill="#2a2a2a"/><rect x="32" y="24" width="36" height="6" rx="1" fill="#1a1a1a"/><ellipse cx="43" cy="36" rx="2.2" ry="1.8" fill="#2a2a2a"/><ellipse cx="57" cy="36" rx="2.2" ry="1.8" fill="#2a2a2a"/><ellipse cx="43" cy="36" rx="1" ry="1" fill="#111"/><ellipse cx="57" cy="36" rx="1" ry="1" fill="#111"/><path d="M39 33 Q42 31.5 46 33" fill="none" stroke="#3a3a3a" stroke-width="1"/><path d="M54 33 Q58 31.5 61 33" fill="none" stroke="#3a3a3a" stroke-width="1"/><path d="M47 42 Q50 43.5 53 42" fill="none" stroke="#a07060" stroke-width="0.8"/><path d="M47 49 Q50 50 53 49" fill="none" stroke="#b07868" stroke-width="1"/></svg>`,
-  'urbanrenewal_1': ()=>`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#2a1a1a"/><ellipse cx="50" cy="80" rx="30" ry="20" fill="#8a5a4a"/><rect x="42" y="64" width="16" height="5" rx="2" fill="#7a4a3a"/><circle cx="50" cy="36" r="17" fill="#e8c8a0"/><path d="M30 30 Q34 10 50 8 Q66 10 70 30" fill="#aaaaaa"/><path d="M30 30 Q28 38 32 44 M70 30 Q72 38 68 44" fill="none" stroke="#aaaaaa" stroke-width="2.5"/><ellipse cx="43" cy="36" rx="2" ry="1.8" fill="#3a2a2a"/><ellipse cx="57" cy="36" rx="2" ry="1.8" fill="#3a2a2a"/><ellipse cx="43" cy="36" rx="0.9" ry="0.9" fill="#111"/><ellipse cx="57" cy="36" rx="0.9" ry="0.9" fill="#111"/><path d="M40 33 Q43 31 46 33" fill="none" stroke="#5a4a3a" stroke-width="0.9"/><path d="M54 33 Q57 31 60 33" fill="none" stroke="#5a4a3a" stroke-width="0.9"/><path d="M47 42 Q50 44 53 42" fill="none" stroke="#907060" stroke-width="0.7"/><path d="M46 49 Q50 50.5 54 49" fill="none" stroke="#a07868" stroke-width="1"/><path d="M38 51 Q42 53 47 51" fill="none" stroke="#c0a888" stroke-width="0.5"/><path d="M53 51 Q58 53 62 51" fill="none" stroke="#c0a888" stroke-width="0.5"/></svg>`
+function makeAvatar(bg,skin,hair,eyes,mouth,extras=''){return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="${bg}"/>${extras}<circle cx="50" cy="38" r="17" fill="${skin}"/><path d="${hair}" fill="#1a1a2a"/><ellipse cx="43" cy="38" rx="2" ry="1.8" fill="#222"/><ellipse cx="57" cy="38" rx="2" ry="1.8" fill="#222"/><ellipse cx="43" cy="38" rx="0.9" ry="0.9" fill="#111"/><ellipse cx="57" cy="38" rx="0.9" ry="0.9" fill="#111"/>${eyes}<path d="${mouth}" fill="none" stroke="#a07060" stroke-width="0.8"/></svg>`;}
+const AVT={
+  suit:()=>makeAvatar('#1a1a2e','#f0d5b0','M32 28Q36 14 50 12Q64 14 68 28L68 20 32 20Z','<line x1="37" y1="34" x2="45" y2="35" stroke="#333" stroke-width="1"/><line x1="55" y1="35" x2="63" y2="34" stroke="#333" stroke-width="1"/><rect x="35" y="36" width="12" height="5" rx="2.5" fill="none" stroke="#888" stroke-width="0.6" opacity="0.5"/><rect x="53" y="36" width="12" height="5" rx="2.5" fill="none" stroke="#888" stroke-width="0.6" opacity="0.5"/>','M47 49 Q50 50.5 53 49','<ellipse cx="50" cy="80" rx="30" ry="20" fill="#2a2a3a"/><polygon points="50,62 47,72 53,72" fill="#aaa" opacity="0.5"/><rect x="38" y="58" width="24" height="3" rx="1.5" fill="#f0f0f0"/>'),
+  grassroot:()=>makeAvatar('#1a1a2e','#f0d0a8','M30 28Q32 16 50 14Q68 16 70 28Q68 22 50 20Q32 22 30 28','<path d="M40 34Q43 32.5 46 34.5" fill="none" stroke="#5a4a3a" stroke-width="0.9"/><path d="M54 34.5Q57 32.5 60 34" fill="none" stroke="#5a4a3a" stroke-width="0.9"/>','M46 49Q50 51.5 54 49','<ellipse cx="50" cy="80" rx="28" ry="18" fill="#4a6a5a"/>'),
+  ecologist:()=>makeAvatar('#1a2a1e','#e8c8a0','M32 26Q35 14 50 12Q65 14 68 26','<circle cx="43" cy="37" r="5.5" fill="none" stroke="#8a9aaa" stroke-width="1.2"/><circle cx="57" cy="37" r="5.5" fill="none" stroke="#8a9aaa" stroke-width="1.2"/><line x1="48.5" y1="37" x2="51.5" y2="37" stroke="#8a9aaa" stroke-width="0.8"/>','M46 49Q50 51 54 49','<ellipse cx="50" cy="80" rx="28" ry="18" fill="#2a4a3a"/>'),
+  techceo:()=>makeAvatar('#1a1a30','#f2d8b5','M32 30Q34 16 50 14Q66 16 68 30L35 26Q50 22 65 26','','M44 49Q50 52 56 49','<ellipse cx="50" cy="80" rx="28" ry="18" fill="#2a2a4a"/>'),
+  villager:()=>makeAvatar('#2a2a1a','#d8b888','M30 24Q34 10 50 8Q66 10 70 24','<path d="M38 34Q42 32 46 34" fill="none" stroke="#5a4a3a" stroke-width="1.1"/><path d="M54 34Q58 32 62 34" fill="none" stroke="#5a4a3a" stroke-width="1.1"/>','M46 49Q50 50 54 49','<ellipse cx="50" cy="80" rx="28" ry="18" fill="#6a6a4a"/><ellipse cx="50" cy="24" rx="22" ry="8" fill="#4a3a2a"/>'),
+  official:()=>makeAvatar('#1a1a2e','#f0d5b5','M32 28Q36 14 50 12Q64 14 68 28L32 24 68 24','<line x1="39" y1="34" x2="47" y2="35" stroke="#333" stroke-width="1"/><line x1="53" y1="35" x2="61" y2="34" stroke="#333" stroke-width="1"/>','M47 49Q50 50 53 49','<ellipse cx="50" cy="80" rx="30" ry="20" fill="#2a2a40"/><polygon points="50,62 47,71 53,71" fill="#a33" opacity="0.6"/><rect x="38" y="58" width="24" height="3" rx="1.5" fill="#f0f0f0"/>'),
+  elderwoman:()=>makeAvatar('#2a1a1a','#e8c8a0','M30 30Q34 10 50 8Q66 10 70 30','<path d="M40 34Q43 32 46 34" fill="none" stroke="#5a4a3a" stroke-width="0.8"/><path d="M54 34Q57 32 60 34" fill="none" stroke="#5a4a3a" stroke-width="0.8"/>','M46 49Q50 50.5 54 49','<ellipse cx="50" cy="80" rx="28" ry="18" fill="#8a5a4a"/><path d="M30 30Q28 38 32 44 M70 30Q72 38 68 44" fill="none" stroke="#aaa" stroke-width="2"/>'),
+  researcher:()=>makeAvatar('#1a2030','#f5dcc0','M30 32Q33 12 50 10Q67 12 70 32','<circle cx="43" cy="37" r="5" fill="none" stroke="#6a6a8a" stroke-width="1"/><circle cx="57" cy="37" r="5" fill="none" stroke="#6a6a8a" stroke-width="1"/><line x1="48" y1="37" x2="52" y2="37" stroke="#6a6a8a" stroke-width="0.7"/>','M45 48Q50 51 55 48','<ellipse cx="50" cy="80" rx="28" ry="18" fill="#f0f0f0"/><circle cx="43" cy="45" r="2.5" fill="#f5b8a8" opacity="0.2"/><circle cx="57" cy="45" r="2.5" fill="#f5b8a8" opacity="0.2"/>'),
+  conserve:()=>makeAvatar('#1a2a1a','#e0c098','M33 28Q36 14 50 12Q64 14 67 28','<path d="M39 34Q43 32.5 46 34.5" fill="none" stroke="#5a4a3a" stroke-width="0.9"/><path d="M54 34.5Q57 32.5 61 34" fill="none" stroke="#5a4a3a" stroke-width="0.9"/>','M46 49Q50 51 54 49','<ellipse cx="50" cy="80" rx="28" ry="18" fill="#3a5a3a"/><path d="M28 24L72 24Q68 18 50 14Q32 18 28 24" fill="#7a6a4a"/><rect x="28" y="22" width="44" height="4" rx="2" fill="#6a5a3a"/>'),
+  resident:()=>makeAvatar('#2a1a2a','#f0d0b0','M30 30Q34 12 50 10Q66 12 70 30','<path d="M40 34Q43 32 46 34" fill="none" stroke="#5a4a3a" stroke-width="0.8"/><path d="M54 34Q57 32 60 34" fill="none" stroke="#5a4a3a" stroke-width="0.8"/>','M46 49Q50 50.5 54 49','<ellipse cx="50" cy="80" rx="28" ry="18" fill="#6a4a5a"/><path d="M30 30Q28 36 30 42 M70 30Q72 36 70 42" fill="none" stroke="#3a2a1a" stroke-width="2"/>'),
 };
-function getAvatarSVG(pid,idx){const k=pid+'_'+idx;return avatarSVGs[k]?avatarSVGs[k]():`<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#2a2a3a"/><circle cx="50" cy="38" r="16" fill="#888"/><ellipse cx="50" cy="78" rx="28" ry="20" fill="#666"/></svg>`;}
 
 // ===== PARTICLES =====
-(function(){
-  const c=document.getElementById('particle-canvas'),x=c.getContext('2d');let p=[];
-  function r(){c.width=innerWidth;c.height=innerHeight;}r();addEventListener('resize',r);
-  class P{constructor(){this.r();}r(){this.x=Math.random()*c.width;this.y=Math.random()*c.height;this.s=Math.random()*1.5+0.3;this.dx=(Math.random()-0.5)*0.25;this.dy=(Math.random()-0.5)*0.25;this.o=Math.random()*0.25+0.05;this.p=Math.random()*Math.PI*2;}u(){this.x+=this.dx;this.y+=this.dy;this.p+=0.015;if(this.x<0||this.x>c.width||this.y<0||this.y>c.height)this.r();}d(){const o=this.o+Math.sin(this.p)*0.06;x.beginPath();x.arc(this.x,this.y,this.s,0,Math.PI*2);x.fillStyle=`rgba(0,212,255,${Math.max(0,o)})`;x.fill();}}
-  for(let i=0;i<30;i++)p.push(new P());
-  (function a(){x.clearRect(0,0,c.width,c.height);p.forEach(i=>{i.u();i.d();});for(let i=0;i<p.length;i++)for(let j=i+1;j<p.length;j++){const d=Math.hypot(p[i].x-p[j].x,p[i].y-p[j].y);if(d<140){x.beginPath();x.moveTo(p[i].x,p[i].y);x.lineTo(p[j].x,p[j].y);x.strokeStyle=`rgba(0,212,255,${0.025*(1-d/140)})`;x.lineWidth=0.5;x.stroke();}}requestAnimationFrame(a);})();
-})();
+(function(){const c=document.getElementById('particle-canvas'),x=c.getContext('2d');let p=[];function r(){c.width=innerWidth;c.height=innerHeight;}r();addEventListener('resize',r);class P{constructor(){this.r();}r(){this.x=Math.random()*c.width;this.y=Math.random()*c.height;this.s=Math.random()*1.5+0.3;this.dx=(Math.random()-0.5)*0.25;this.dy=(Math.random()-0.5)*0.25;this.o=Math.random()*0.25+0.05;this.p=Math.random()*Math.PI*2;}u(){this.x+=this.dx;this.y+=this.dy;this.p+=0.015;if(this.x<0||this.x>c.width||this.y<0||this.y>c.height)this.r();}d(){const o=this.o+Math.sin(this.p)*0.06;x.beginPath();x.arc(this.x,this.y,this.s,0,Math.PI*2);x.fillStyle=`rgba(0,212,255,${Math.max(0,o)})`;x.fill();}}for(let i=0;i<25;i++)p.push(new P());(function a(){x.clearRect(0,0,c.width,c.height);p.forEach(i=>{i.u();i.d();});for(let i=0;i<p.length;i++)for(let j=i+1;j<p.length;j++){const d=Math.hypot(p[i].x-p[j].x,p[i].y-p[j].y);if(d<130){x.beginPath();x.moveTo(p[i].x,p[i].y);x.lineTo(p[j].x,p[j].y);x.strokeStyle=`rgba(0,212,255,${0.02*(1-d/130)})`;x.lineWidth=0.5;x.stroke();}}requestAnimationFrame(a);})();})();
 
 // ===== STATE =====
 const state={economy:50,environment:50,livelihood:50,phase:1,maxPhase:5,usedProjects:[],currentDragId:null,touchGhost:null,busy:false};
 const phaseNames=['','第一','第二','第三','第四','第五'];
 
-// ===== PROJECTS =====
+// ===== PROJECTS (cards only) =====
 const projects=[
-  {id:'kauyi',title:'交椅洲人工島',hectare:'約 1,000 公頃',zone:'victoria',desc:'建立香港第三個商業核心區（CBD3），以填海方式提供約 1,000 公頃策略性增長用地，紓解長遠 3,000 公頃的土地短缺。',background:'根據《香港2030+》報告，2019 至 2048 年間香港整體需要 5,800 至 6,200 公頃土地。交椅洲人工島位處維港都會區延伸部分的策略性位置，旨在為 40 萬至 70 萬人口提供居所，並設立約 20 萬個就業職位，成為繼中環及九龍東後的第三個核心商業區。',stakeholders:[{role:'商界巨頭',color:'#ffd700',text:'都會區土地早已飽和，CBD3 是維持香港國際金融中心地位的唯一出路！若不及早闢拓熟地，跨國企業將加速外遷，香港的競爭力將遭受不可逆轉的打擊。'},{role:'基層關注組',color:'#00d4ff',text:'人口與樓宇「雙老化」逼在眉睫，全港逾三萬幢私人樓宇樓齡已逾五十年。人工島必須優先大量興建公營房屋，而非一味服務資本，否則基層住屋問題將陷入永無止境的零和博弈。'},{role:'生態學者',color:'#00ff88',text:'大規模填海將不可逆轉地削弱中部水域的環境抗禦力與海洋生態。石珊瑚群落、中華白海豚的棲息地一旦破壞，再無修復可能。我們不能以犧牲不可再生的自然資本換取短期經濟利益。'}],policies:[{label:'鐵腕推動高增值商業填海',desc:'全力發展 CBD3，以金融及商業用途為主導，最大化經濟產出。',effects:{economy:25,livelihood:-10,environment:-20}},{label:'轉向生態及公營房屋主導',desc:'大幅削減商業用地比例，以公營房屋及生態緩衝為核心規劃目標。',effects:{economy:-15,livelihood:25,environment:-10}}]},
-  {id:'santinlmz',title:'新田／落馬洲發展樞紐',hectare:'約 340 公頃',zone:'north',desc:'釋放邊境禁區土地，擴展創科樞紐，推動工業 4.0 與大灣區深度融合。',background:'新田／落馬洲發展樞紐位處深港邊境策略性位置，佔地約 340 公頃，為北部都會區的核心引擎。規劃目標是建設具國際競爭力的創新科技中心，藉著毗鄰深圳的地理優勢，促進港深兩地在科研、先進製造及現代服務業的協同發展。',stakeholders:[{role:'創科企業家',color:'#bb77ff',text:'我們急需連片的「熟地」來推動工業 4.0 與大灣區創科融合！目前香港產業用地嚴重匱乏，若再不加快闢拓，初創企業與研發團隊將被迫北移，本地創科生態圈將面臨空心化危機。'},{role:'新界原居民',color:'#ff8844',text:'發展不能以摧毀我們世代相傳的鄉郊風貌與農耕作業為代價！政府必須尊重原居民的合法權益與歷史文脈，而非一刀切強行收地，令村民流離失所、鄉郊文化蕩然無存。'}],policies:[{label:'強行收地最大化發展容量',desc:'全面收回私人土地，以最高密度開發創科及商業用途。',effects:{economy:20,livelihood:-15,environment:-10}},{label:'避開村落，縮減發展規模',desc:'保留主要鄉村聚落及農地，縮小發展面積以維護鄉郊生態。',effects:{economy:-20,livelihood:10,environment:15}}]},
-  {id:'hsitp',title:'港深創新及科技園',hectare:'約 87 公頃',zone:'north',desc:'位於落馬洲河套區，建立蓬勃的跨境創科生態圈，接軌全球創新資源。',background:'港深創新及科技園位於落馬洲河套區，佔地約 87 公頃，為港深兩地共同開發的國家級創科項目。園區規劃涵蓋生命健康科技、人工智能與機械人、金融科技及先進製造等重點領域，冀望建構「基礎研究—應用研發—產業轉化」的完整創科價值鏈。',stakeholders:[{role:'科技園區高管',color:'#00d4ff',text:'這是接軌全球創新資源的國家級戰略要地，基建必須全速上馬！河套區的獨特「一區兩園」模式，可讓科研人才與資金跨境自由流動，為香港開闢嶄新的經濟增長極。'},{role:'濕地保育聯盟',color:'#00ff88',text:'園區緊貼極具生態價值的米埔自然護理區及后海灣拉姆薩爾濕地，過度開發將對全球候鳥遷飛路線造成毀滅性打擊。我們堅決要求設置不少於二十公頃的生態緩衝區，並採用全面的低影響開發策略。'}],policies:[{label:'聚焦高密度創科基建',desc:'以最高發展容量建設園區，全力追趕深圳科創步伐。',effects:{economy:25,livelihood:5,environment:-20}},{label:'強制推行極高標準的低碳與生態緩衝設計',desc:'大幅增加綠化緩衝帶及環保設施，降低建築密度。',effects:{economy:-15,livelihood:0,environment:20}}]},
-  {id:'maliushui',title:'馬料水填海及沙田污水廠搬遷用地',hectare:'合共約 88 公頃',zone:'east',desc:'騰出 28 公頃原址並填海 60 公頃，作創新及科技發展用途，強化東部知識走廊。',background:'政府計劃將沙田污水處理廠遷入岩洞，騰出 28 公頃原址用地，並在吐露港進行約 60 公頃填海工程，合共提供約 88 公頃土地。該用地毗鄰香港科學園及香港中文大學，具備發揮創科群聚效應的獨特優勢。',stakeholders:[{role:'科研機構代表',color:'#bb77ff',text:'科學園擴建迫在眉睫，這 88 公頃是發揮群聚效應的黃金地段！馬料水一帶匯聚大學、科研機構與高端人才，若能整合開發，將成為亞太區首屈一指的知識型經濟樞紐。'},{role:'馬鞍山沿岸居民',color:'#ff6666',text:'填海工程及後續交通基建將徹底破壞吐露港的海岸景觀與社區寧靜！我們歷經數十年才建立起的宜居環境，不能因為一紙規劃便付之東流。政府有責任尊重現有社區的生活質素。'}],policies:[{label:'堅決推展填海與擴建',desc:'全面推進 60 公頃填海計劃，建設高密度創科園區。',effects:{economy:20,livelihood:-20,environment:-10}},{label:'取消填海，僅活化污水廠原址',desc:'放棄填海方案，僅利用 28 公頃遷廠原址作低密度發展。',effects:{economy:-25,livelihood:15,environment:15}}]},
-  {id:'ntnewtown',title:'新界北新市鎮',hectare:'約 1,180 公頃',zone:'north',desc:'龐大的綜合新發展區，涵蓋古洞北、粉嶺北及坪輋／打鼓嶺等片區。',background:'新界北新市鎮是北部都會區中規模最龐大的綜合發展計劃，佔地約 1,180 公頃，規劃容納約 25 萬人口。該區域涵蓋大量棕地、農地及鄉村式發展用地，收地與安置工作牽涉極為複雜的產權與社區網絡問題。',stakeholders:[{role:'房屋政策研究員',color:'#00d4ff',text:'公營房屋輪候冊積壓逾十萬宗申請，新界北是唯一能在可見將來提供大規模房屋用地的選址。1,180 公頃的發展容量若能充分釋放，可根本性地扭轉供不應求的困局。'},{role:'鄉郊保育倡議者',color:'#00ff88',text:'新界北保存了香港碩果僅存的大片農耕景觀與低密度鄉村聚落。全面高密度開發將永久摧毀這些不可再生的鄉郊文化地景，令城鄉共融淪為空談。我們主張循序漸進、保留核心自然地貌的規劃方案。'}],policies:[{label:'全面高密度開發',desc:'最大化土地利用率，以高層住宅及商業綜合體為主導。',effects:{economy:15,livelihood:20,environment:-25}},{label:'保留自然地貌的低密度規劃',desc:'保存主要農地及生態走廊，以低矮建築群融入鄉郊肌理。',effects:{economy:-10,livelihood:-15,environment:20}}]},
-  {id:'urbanrenewal',title:'市區舊區重建與更替',hectare:'地區為本',zone:'victoria',desc:'應對市區前所未有的「雙老化」危機，推動地區為本的更新改造。',background:'香港市區正面臨人口老化與樓宇老化的「雙老化」挑戰。全港逾三萬幢私人樓宇樓齡已超過五十年，當中不少缺乏基本維修保養，存在嚴重的結構安全隱患。與此同時，舊區長者人口比例持續攀升，現有社區網絡與公共設施承受巨大壓力。',stakeholders:[{role:'市區重建局代表',color:'#ffd700',text:'舊區地積比率嚴重偏低，透過清拆重建可大幅提升發展容量與物業價值，同時改善建築安全與城市面貌。重建所釋放的商業價值亦可為公共設施提供交叉補貼的財政基礎。'},{role:'社區網絡倡導者',color:'#ff8844',text:'大規模清拆將摧毀舊區長者賴以維生的社區支援網絡——街坊鄰里、小店經濟、社區組織。一旦這些無形的社會資本被連根拔起，重建後的新社區將淪為毫無歸屬感的石屎森林。我們主張以復修為主、小區漸進的更新模式。'}],policies:[{label:'大規模清拆以釋放商業價值',desc:'大幅提升地積比率，以高密度商住綜合體取代老舊建築群。',effects:{economy:25,livelihood:-20,environment:-10}},{label:'以復修為主，保留長者友善社區網絡',desc:'推行樓宇復修計劃，維持現有社區肌理與小店經濟。',effects:{economy:-20,livelihood:20,environment:10}}]}
+  {id:'kauyi',title:'交椅洲人工島',hectare:'約 1,000 公頃',desc:'於中部水域填海建立第三個核心商業區（CBD3），提供約 1,000 公頃策略性增長用地。'},
+  {id:'santinlmz',title:'新田科技城',hectare:'約 627 公頃',desc:'整合新田／落馬洲發展樞紐及港深創科園，建設大型創科產業平台。'},
+  {id:'hsitp',title:'港深創新及科技園',hectare:'約 87 公頃',desc:'位於落馬洲河套區的國家級創科項目，建構「一區兩園」跨境科研生態圈。'},
+  {id:'maliushui',title:'馬料水填海及沙田污水處理廠搬遷',hectare:'合共約 88 公頃',desc:'遷廠騰出 28 公頃原址並填海約 60 公頃，強化東部知識及科技走廊。'},
+  {id:'ntnewtown',title:'新界北新市鎮',hectare:'約 1,180 公頃',desc:'龐大綜合新發展區，應對長遠房屋及經濟用地需求。'},
+  {id:'urbanrenewal',title:'市區舊區重建與更替',hectare:'地區為本',desc:'應對「雙老化」危機，推動地區為本的更新改造。'}
 ];
 
-// ===== RULES =====
+// ===== 2D SCENARIO MATRIX: Project × Region = Unique Scenario =====
+const scenarioMatrix={
+// ---- 交椅洲人工島 ----
+'kauyi_victoria':{title:'交椅洲人工島 × 維港都會區',bg:'政府按原定規劃在中部水域推展約 1,000 公頃人工島填海，建立第三個核心商業區（CBD3），直接擴展維港都會區的經濟腹地。根據《香港2030+》最終報告，2019 至 2048 年間香港整體土地需求為 5,800 至 6,200 公頃，扣除已推展項目後仍欠缺約 3,000 公頃。此舉被視為應對土地短缺的戰略支柱。',
+  stakeholders:[{role:'商界巨頭',color:'#ffd700',text:'CBD3 是維持國際金融中心地位的唯一出路！若不及早闢拓熟地，跨國企業將加速外遷，香港的競爭力將遭受不可逆轉的打擊。',avatar:'suit'},{role:'生態學者',color:'#00ff88',text:'大規模填海將不可逆轉地削弱中部水域的環境抗禦力。石珊瑚群落、中華白海豚的棲息地一旦破壞，再無修復可能。',avatar:'ecologist'}],
+  policies:[{label:'鐵腕推動高增值商業填海',desc:'全力發展CBD3，最大化金融商業產出。',effects:{economy:25,livelihood:-10,environment:-20}},{label:'轉向生態及公營房屋主導',desc:'大幅削減商業用地，以公營房屋及生態緩衝為核心。',effects:{economy:-15,livelihood:25,environment:-10}}]},
+'kauyi_north':{title:'交椅洲預算轉移 × 北部都會區',bg:'政府決定「棄海投陸」，將原定數千億填海預算全面轉移至北部邊境，進行極具野心的深港大融合陸地開發計劃，大規模闢拓新界北熟地。',
+  stakeholders:[{role:'大灣區融合推動會',color:'#ffd700',text:'這是歷史性的戰略轉向！將填海資源投放於陸地邊境開發，可直接對接深圳經濟腹地，打造世界級的跨境都會區，經濟效益遠超孤島式填海！',avatar:'techceo'},{role:'新界鄉郊保育聯盟',color:'#00ff88',text:'全面剷平新界北的農田與村落以換取所謂的融合，是對鄉郊文化的滅絕式打擊。數百年的宗族聚落將永遠消失，這代價不可承受。',avatar:'conserve'}],
+  policies:[{label:'全速推進邊境大融合開發',desc:'將全部預算投入北部，最大化深港經濟協同。',effects:{economy:30,livelihood:-5,environment:-25}},{label:'縮減規模，保留鄉郊核心地帶',desc:'僅開發已平整的棕地，保留村落與農地。',effects:{economy:-10,livelihood:10,environment:15}}]},
+'kauyi_west':{title:'交椅洲預算轉移 × 西部經濟走廊',bg:'政府將人工島填海預算戰略性轉移至西部，大規模整合屯門、龍鼓灘及洪水橋一帶的棕地與工業用地，建設現代化物流及先進製造基地。',
+  stakeholders:[{role:'物流業商會主席',color:'#ffd700',text:'香港港口貨運量持續下滑，唯有大規模升級西部物流基建，才能在大灣區供應鏈中重新站穩腳步。這筆預算轉移來得正是時候！',avatar:'suit'},{role:'屯門居民代表',color:'#ff6666',text:'我們已經承受了數十年的工業污染與重型車輛滋擾。再大規模擴建物流倉儲，社區的空氣質素和交通安全將徹底崩潰！',avatar:'resident'}],
+  policies:[{label:'全面建設高端物流產業帶',desc:'將西部打造為大灣區核心物流樞紐。',effects:{economy:20,livelihood:-20,environment:-15}},{label:'僅活化現有棕地，嚴控規模',desc:'限制新增開發面積，優先改善現有社區環境。',effects:{economy:-15,livelihood:15,environment:10}}]},
+'kauyi_east':{title:'交椅洲預算轉移 × 東部知識走廊',bg:'政府將人工島預算重新部署至東部，在大埔及西貢一帶進行大規模知識型經濟基建投資，擴建科學園並設立國際大學城。',
+  stakeholders:[{role:'大學聯盟代表',color:'#bb77ff',text:'東部匯聚了全港最密集的高等院校與科研設施。若能將數千億預算注入此區，可建立亞洲首屈一指的大學城與科研走廊！',avatar:'researcher'},{role:'西貢郊野保育組',color:'#00ff88',text:'東部是香港最珍貴的郊野公園腹地。大規模基建將破壞萬宜水庫集水區的生態完整性，對淡水資源構成不可逆轉的威脅。',avatar:'ecologist'}],
+  policies:[{label:'大舉投資東部大學城計劃',desc:'全力建設科研基建，打造亞太知識樞紐。',effects:{economy:20,livelihood:5,environment:-25}},{label:'限制開發範圍，保護郊野生態',desc:'僅在已開發區域擴建，嚴守郊野公園邊界。',effects:{economy:-15,livelihood:0,environment:20}}]},
+
+// ---- 新田／落馬洲 ----
+'santinlmz_victoria':{title:'新田科技城策略轉移 × 維港都會區',bg:'政府決定將新田科技城約 627 公頃的創科樞紐資源與定位轉移至維港都會區，在九龍東及啟德一帶建設市區版的創科中心，以善用現有基建及人才網絡。',
+  stakeholders:[{role:'科創基金經理',color:'#bb77ff',text:'初創企業需要的是人才密度與國際連通性，這兩者維港都會區都遠勝偏遠的邊境。將創科資源集中於市區才是務實之選！',avatar:'techceo'},{role:'基層住屋關注組',color:'#00d4ff',text:'九龍東及啟德的用地本應優先興建公營房屋！將珍貴的市區土地撥作創科園區，是對輪候冊上十萬家庭的背棄。',avatar:'grassroot'}],
+  policies:[{label:'市區創科優先，最大化集聚效應',desc:'在維港都會區建設高密度創科中心。',effects:{economy:25,livelihood:-15,environment:-10}},{label:'維持住屋用途為主',desc:'限制創科用地比例，確保公營房屋供應。',effects:{economy:-20,livelihood:20,environment:5}}]},
+'santinlmz_north':{title:'新田科技城 × 北部都會區',bg:'按原定規劃在邊境整合約 627 公頃土地（包括新田／落馬洲發展樞紐及港深創科園），建設國際級創科產業平台，藉毗鄰深圳的地理優勢促進港深協同發展。',
+  stakeholders:[{role:'創科企業家',color:'#bb77ff',text:'我們急需連片的「熟地」來推動工業 4.0 與大灣區創科融合！目前香港產業用地嚴重匱乏，若再不加快闢拓，本地創科生態圈將面臨空心化危機。',avatar:'techceo'},{role:'新界原居民',color:'#ff8844',text:'發展不能以摧毀我們世代相傳的鄉郊風貌與農耕作業為代價！政府必須尊重原居民的合法權益與歷史文脈。',avatar:'villager'}],
+  policies:[{label:'強行收地最大化發展容量',desc:'全面收回私人土地，以最高密度開發。',effects:{economy:20,livelihood:-15,environment:-10}},{label:'避開村落，縮減發展規模',desc:'保留鄉村聚落及農地，縮小發展面積。',effects:{economy:-20,livelihood:10,environment:15}}]},
+'santinlmz_west':{title:'新田科技城資源轉移 × 西部經濟走廊',bg:'政府將新田科技城的定位及資源西移至洪水橋及元朗南一帶，結合現有新發展區的基建，打造「創科＋物流」混合產業走廊。',
+  stakeholders:[{role:'工業4.0倡議者',color:'#bb77ff',text:'西部擁有大量待整合的棕地，若能結合創科與智慧物流，可建立全港首個「產學研」一體化的現代工業園區！',avatar:'techceo'},{role:'棕地作業者聯會',color:'#ff8844',text:'數千戶棕地作業者賴以為生的回收場、車房、倉庫將被一刀切清除。政府從未認真考慮過我們的安置方案！',avatar:'villager'}],
+  policies:[{label:'全面整合棕地建設產業園',desc:'大規模清理棕地，建設現代化混合產業區。',effects:{economy:20,livelihood:-20,environment:5}},{label:'漸進式整合，保障作業者安置',desc:'分階段收地，優先落實安置計劃。',effects:{economy:-10,livelihood:15,environment:-5}}]},
+'santinlmz_east':{title:'新田科技城資源轉移 × 東部知識走廊',bg:'政府將新田科技城的創科定位東移至白石角科學園周邊，藉既有科研基礎設施的群聚優勢，建設「東部科技延伸區」。',
+  stakeholders:[{role:'科學園擴展委員會',color:'#bb77ff',text:'科學園周邊已匯聚大量科研人才與設施。將新田的資源注入此區，可即時發揮群聚效應，比在邊境從零開始高效十倍！',avatar:'researcher'},{role:'大埔區居民代表',color:'#ff6666',text:'大埔的交通網絡已經不堪負荷。再大規模擴建科技園區，吐露港公路和東鐵線將徹底癱瘓，居民的通勤噩夢將無止境地惡化！',avatar:'resident'}],
+  policies:[{label:'大規模擴建科學園生態圈',desc:'全力投資東部創科基建，追求最大群聚效應。',effects:{economy:25,livelihood:-15,environment:-15}},{label:'小規模擴展，優先改善交通',desc:'限制園區面積，將資源投入交通基建。',effects:{economy:-10,livelihood:15,environment:0}}]},
+
+// ---- 港深創科園 ----
+'hsitp_victoria':{title:'港深創科園策略轉移 × 維港都會區',bg:'政府決定將河套區創科園的國家級定位南移至維港核心區，在西九文化區毗鄰地段建設「維港創科旗艦區」，以國際化都會環境吸引全球頂尖人才。',
+  stakeholders:[{role:'國際人才招募顧問',color:'#00d4ff',text:'全球頂尖科學家選擇落戶的首要考量是城市的國際化程度與生活配套。維港核心區的吸引力是偏遠河套區無法比擬的！',avatar:'suit'},{role:'文化界代言人',color:'#ff8844',text:'西九文化區是香港文化藝術的精神地標。在其旁邊興建大規模創科設施，將徹底破壞這片難得的文化空間氛圍。',avatar:'elderwoman'}],
+  policies:[{label:'維港創科旗艦區全速推進',desc:'在西九周邊建設國際級創科設施。',effects:{economy:25,livelihood:-10,environment:-15}},{label:'保護文化區完整性',desc:'限制科技設施規模，維護文化空間。',effects:{economy:-15,livelihood:10,environment:10}}]},
+'hsitp_north':{title:'港深創新及科技園 × 北部都會區',bg:'按原定規劃在河套區建設約 87 公頃的國家級創科園區，建構「一區兩園」跨境科研生態圈。',
+  stakeholders:[{role:'科技園區高管',color:'#00d4ff',text:'河套區的「一區兩園」模式可讓科研人才與資金跨境自由流動，為香港開闢嶄新的經濟增長極！',avatar:'techceo'},{role:'濕地保育聯盟',color:'#00ff88',text:'園區緊貼米埔自然護理區及后海灣拉姆薩爾濕地，過度開發將對全球候鳥遷飛路線造成毀滅性打擊。',avatar:'conserve'}],
+  policies:[{label:'聚焦高密度創科基建',desc:'以最高發展容量建設園區。',effects:{economy:25,livelihood:5,environment:-20}},{label:'強制推行低碳與生態緩衝設計',desc:'大幅增加綠化帶，降低建築密度。',effects:{economy:-15,livelihood:0,environment:20}}]},
+'hsitp_west':{title:'港深創科園策略轉移 × 西部經濟走廊',bg:'政府將河套區創科園的資源與定位西移，在屯門及龍鼓灘建設「西部深港科技合作區」，結合港珠澳大橋的交通優勢發展跨境科技產業。',
+  stakeholders:[{role:'跨境商貿協會',color:'#ffd700',text:'港珠澳大橋的使用率長期偏低。在其沿線建設創科園區，可一石二鳥，既活化大橋經濟效益，又開闢全新的科技產業帶！',avatar:'suit'},{role:'龍鼓灘環保組',color:'#00ff88',text:'龍鼓灘發電廠群已對沿岸生態造成巨大壓力。再加建大型科技園區，將令這片僅存的西部海岸生態徹底崩潰。',avatar:'ecologist'}],
+  policies:[{label:'建設西部跨境科技產業帶',desc:'全面開發龍鼓灘沿線，對接大橋經濟圈。',effects:{economy:20,livelihood:-10,environment:-20}},{label:'限制開發，保護海岸生態',desc:'僅在已工業化區域設置小型科技設施。',effects:{economy:-15,livelihood:5,environment:15}}]},
+'hsitp_east':{title:'港深創科園策略轉移 × 東部知識走廊',bg:'政府將創科園的國家級定位東移至白石角科學園旁，與現有園區整合成為「東部超級科技城」，形成從大學到產業的完整創科生態鏈。',
+  stakeholders:[{role:'科研機構代表',color:'#bb77ff',text:'將國家級資源與現有科學園整合，可立即產生協同效應。東部擁有全港最完善的科研基礎設施，是最合理的選址！',avatar:'researcher'},{role:'沙田區議會代表',color:'#ff6666',text:'白石角一帶的交通和社區設施已嚴重超負荷。再疊加一個國家級園區，十萬計的新增人口將令整個沙田區的宜居指數暴跌！',avatar:'resident'}],
+  policies:[{label:'整合建設東部超級科技城',desc:'將國家級資源全面注入東部。',effects:{economy:25,livelihood:-20,environment:-10}},{label:'分散佈局，減輕社區壓力',desc:'將部分設施分散至其他區域。',effects:{economy:-10,livelihood:15,environment:5}}]},
+
+// ---- 馬料水填海 ----
+'maliushui_victoria':{title:'馬料水預算轉移 × 維港都會區',bg:'政府將馬料水填海預算轉投維港兩岸，在紅磡及北角海濱進行小規模填海及岸線重整，建設「維港智慧海濱帶」。',
+  stakeholders:[{role:'海濱規劃倡議者',color:'#00d4ff',text:'維港海濱是香港最寶貴的公共資產。適度的智慧化改造可大幅提升海濱的經濟價值與市民的休憩體驗！',avatar:'official'},{role:'保護海港協會',color:'#00ff88',text:'《保護海港條例》明確禁止在維港進行非必要填海。任何以「智慧化」為名的岸線工程都是對法治精神的侵蝕！',avatar:'ecologist'}],
+  policies:[{label:'推進維港智慧海濱改造',desc:'在維港兩岸建設智慧設施與商業空間。',effects:{economy:20,livelihood:5,environment:-20}},{label:'嚴守海港保護原則',desc:'放棄任何維港岸線工程，專注陸上發展。',effects:{economy:-15,livelihood:5,environment:15}}]},
+'maliushui_north':{title:'馬料水預算轉移 × 北部都會區',bg:'政府將馬料水填海及科技擴展預算北移，在新田一帶建設「北部科研衛星城」，與深圳光明科學城隔境呼應。',
+  stakeholders:[{role:'深港合作委員會',color:'#ffd700',text:'深圳光明科學城正高速崛起。在其對岸建設香港的科研衛星城，可形成跨境科研雙子星，在全球創新版圖中佔據獨特位置！',avatar:'suit'},{role:'北區農民聯會',color:'#ff8844',text:'新田一帶仍有大片活躍農地，是香港本地農業的最後堡壘。為了追逐所謂的跨境科研概念而犧牲糧食自主能力，是極其短視的決策。',avatar:'villager'}],
+  policies:[{label:'建設北部科研衛星城',desc:'全面開發新田農地，對接深圳科學城。',effects:{economy:20,livelihood:-10,environment:-20}},{label:'保留農地，維護糧食安全',desc:'放棄大規模開發，保護本地農業。',effects:{economy:-20,livelihood:10,environment:15}}]},
+'maliushui_west':{title:'馬料水預算轉移 × 西部經濟走廊',bg:'政府將馬料水科技擴展計劃西移至屯門河兩岸，結合屯門新市鎮更新計劃，建設「西部知識型經濟帶」。',
+  stakeholders:[{role:'屯門更新委員會',color:'#00d4ff',text:'屯門新市鎮老化嚴重，急需注入新的經濟動力。將科技擴展資源導入此區，可一舉實現市鎮更新與產業升級的雙重目標！',avatar:'official'},{role:'屯門環保居民組',color:'#00ff88',text:'屯門河的水質改善工程耗費數十年心血。大規模建設知識型產業帶，施工期間的污染將令河流生態再度倒退。',avatar:'ecologist'}],
+  policies:[{label:'全面推進西部知識產業帶',desc:'在屯門河沿岸建設科技與教育設施。',effects:{economy:15,livelihood:-15,environment:-15}},{label:'優先完成環境修復',desc:'先完成河流生態修復，再漸進式引入產業。',effects:{economy:-15,livelihood:10,environment:15}}]},
+'maliushui_east':{title:'馬料水填海及沙田污水處理廠搬遷 × 東部知識走廊',bg:'按原定規劃將沙田污水處理廠遷入岩洞，騰出 28 公頃原址用地，並在吐露港填海約 60 公頃，合共提供約 88 公頃土地。該用地毗鄰香港科學園及香港中文大學，具備發揮創科群聚效應的獨特優勢。',
+  stakeholders:[{role:'科研機構代表',color:'#bb77ff',text:'科學園擴建迫在眉睫，這 88 公頃是發揮群聚效應的黃金地段！若能整合開發，將成為亞太區首屈一指的知識型經濟樞紐。',avatar:'researcher'},{role:'馬鞍山沿岸居民',color:'#ff6666',text:'填海工程將徹底破壞吐露港的海岸景觀與社區寧靜！我們歷經數十年建立的宜居環境，不能因一紙規劃便付之東流。',avatar:'resident'}],
+  policies:[{label:'堅決推展填海與擴建',desc:'全面推進 60 公頃填海，建設高密度創科園區。',effects:{economy:20,livelihood:-20,environment:-10}},{label:'取消填海，僅活化原址',desc:'放棄填海，僅利用遷廠原址作低密度發展。',effects:{economy:-25,livelihood:15,environment:15}}]},
+
+// ---- 新界北新市鎮 ----
+'ntnewtown_victoria':{title:'新界北資源轉移 × 維港都會區',bg:'政府決定放緩新界北的大規模開發，將房屋建設資源集中投放於維港都會區的舊區重建與土地再利用，以加速解決市區住屋危機。',
+  stakeholders:[{role:'市區房屋倡議者',color:'#00d4ff',text:'公營房屋輪候者絕大多數在市區工作。在市區建屋可大幅縮短通勤時間，立即改善基層生活質素，遠比遙遠的新界北新市鎮實際！',avatar:'grassroot'},{role:'舊區商戶聯會',color:'#ff8844',text:'加速舊區重建意味著大量小商戶將被迫遷離經營數十年的社區。天水圍的教訓告訴我們，缺乏商業生態的新區只會製造更多社會問題。',avatar:'elderwoman'}],
+  policies:[{label:'加速市區重建，集中建屋',desc:'大規模清拆舊區，釋放土地建設公營房屋。',effects:{economy:15,livelihood:15,environment:-20}},{label:'保留舊區肌理，漸進更新',desc:'以復修為主，維護社區商業生態。',effects:{economy:-15,livelihood:-5,environment:15}}]},
+'ntnewtown_north':{title:'新界北新市鎮 × 北部都會區',bg:'按原定規劃在約 1,180 公頃土地上建設龐大的綜合新發展區，涵蓋古洞北、粉嶺北及坪輋／打鼓嶺等片區。此為北部都會區（合共約 2,300 公頃）的重要組成部分，規劃容納大量人口及經濟活動。',
+  stakeholders:[{role:'房屋政策研究員',color:'#00d4ff',text:'公營房屋輪候冊積壓逾十萬宗申請，新界北是唯一能在可見將來提供大規模房屋用地的選址。1,180 公頃若能充分釋放，可根本性扭轉困局。',avatar:'researcher'},{role:'鄉郊保育倡議者',color:'#00ff88',text:'新界北保存了香港碩果僅存的農耕景觀。全面高密度開發將永久摧毀這些不可再生的鄉郊文化地景，令城鄉共融淪為空談。',avatar:'conserve'}],
+  policies:[{label:'全面高密度開發',desc:'最大化土地利用率，以高層住宅及商業綜合體為主導。',effects:{economy:15,livelihood:20,environment:-25}},{label:'保留自然地貌的低密度規劃',desc:'保存農地及生態走廊，以低矮建築融入鄉郊。',effects:{economy:-10,livelihood:-15,environment:20}}]},
+'ntnewtown_west':{title:'新界北資源轉移 × 西部經濟走廊',bg:'政府將新界北新市鎮的建屋目標西移至洪水橋及元朗南一帶，藉已有的基建規劃加快建屋步伐，同時減少對偏遠新界北的依賴。',
+  stakeholders:[{role:'公共房屋規劃師',color:'#00d4ff',text:'洪水橋新發展區的基建規劃已相當成熟，將建屋資源集中於此可大幅縮短「生地變熟地」的時間，讓市民更快上樓！',avatar:'official'},{role:'元朗南農業經營者',color:'#ff8844',text:'元朗南的優質農地是香港本地蔬菜供應的重要來源。為了追求建屋速度而犧牲農業生產基地，是對可持續發展理念的諷刺。',avatar:'villager'}],
+  policies:[{label:'集中西部加速建屋',desc:'將建屋資源全面注入洪水橋及元朗南。',effects:{economy:10,livelihood:20,environment:-20}},{label:'分散佈局，保護農業用地',desc:'在多個地區小規模建屋，保留核心農地。',effects:{economy:-10,livelihood:-10,environment:15}}]},
+'ntnewtown_east':{title:'新界北資源轉移 × 東部知識走廊',bg:'政府將大規模建屋計劃東移至將軍澳及西貢北一帶，利用將軍澳第137區填海地及周邊土地建設「東部新市鎮」。',
+  stakeholders:[{role:'將軍澳區議員',color:'#00d4ff',text:'將軍澳 137 區的規劃已拖延多年。若能將新界北的資源注入，可加速將這片填海地建設為設施完善的新社區，惠及數萬家庭！',avatar:'official'},{role:'西貢生態導賞協會',color:'#00ff88',text:'將軍澳與西貢之間是重要的生態廊道。大規模建屋將切斷野生動物的遷移路線，對整個東部的生物多樣性造成連鎖打擊。',avatar:'ecologist'}],
+  policies:[{label:'全力建設東部新市鎮',desc:'大規模開發將軍澳137區及周邊土地。',effects:{economy:10,livelihood:20,environment:-20}},{label:'保護生態廊道，限制開發',desc:'僅開發填海地，嚴守生態走廊邊界。',effects:{economy:-10,livelihood:5,environment:15}}]},
+
+// ---- 市區舊區重建 ----
+'urbanrenewal_victoria':{title:'市區舊區重建 × 維港都會區',bg:'按原定方針在維港都會區推動地區為本的舊區更新，應對全港逾三萬幢樓齡超過五十年的私人樓宇帶來的「雙老化」危機。',
+  stakeholders:[{role:'市區重建局代表',color:'#ffd700',text:'舊區地積比率嚴重偏低，清拆重建可大幅提升發展容量與物業價值，重建所釋放的商業價值可為公共設施提供交叉補貼。',avatar:'official'},{role:'社區網絡倡導者',color:'#ff8844',text:'大規模清拆將摧毀舊區長者賴以維生的社區網絡——街坊鄰里、小店經濟。一旦社會資本被連根拔起，新社區將淪為毫無歸屬感的石屎森林。',avatar:'elderwoman'}],
+  policies:[{label:'大規模清拆釋放商業價值',desc:'大幅提升地積比率，高密度商住綜合體取代老舊建築。',effects:{economy:25,livelihood:-20,environment:-10}},{label:'以復修為主，保留社區網絡',desc:'推行樓宇復修，維持現有社區肌理與小店經濟。',effects:{economy:-20,livelihood:20,environment:10}}]},
+'urbanrenewal_north':{title:'舊區重建資源轉移 × 北部都會區',bg:'政府將市區重建的龐大資金及專業團隊北調，在粉嶺及上水舊墟一帶推行「北部市鎮活化計劃」，以應對北區日益嚴重的社區老化問題。',
+  stakeholders:[{role:'北區社福機構',color:'#00d4ff',text:'北區長者人口比例冠絕全港，社區設施嚴重不足。將重建資源引入北區，可同步解決樓宇安全與長者照護的雙重危機！',avatar:'grassroot'},{role:'上水墟商販聯盟',color:'#ff8844',text:'上水墟的傳統市集文化延續了數百年。以「活化」為名的大規模改造，本質上是對在地文化的連根拔起，我們堅決反對！',avatar:'villager'}],
+  policies:[{label:'全面推進北部市鎮活化',desc:'大規模改造粉嶺及上水舊區。',effects:{economy:15,livelihood:10,environment:-15}},{label:'保留墟市文化，最小干預',desc:'僅進行必要的結構維修，保留傳統風貌。',effects:{economy:-15,livelihood:5,environment:10}}]},
+'urbanrenewal_west':{title:'舊區重建資源轉移 × 西部經濟走廊',bg:'政府將舊區重建資源及經驗西移至荃灣及葵涌一帶的老舊工業區，推動「西部工廈活化2.0」計劃，將廢棄工廈轉型為創意產業及青年住屋空間。',
+  stakeholders:[{role:'青年創業協會',color:'#bb77ff',text:'荃灣及葵涌的廢棄工廈是全港租金最可負擔的創業空間。若能將重建資源投入系統性活化，可為青年創業者打造一個真正可負擔的產業生態圈！',avatar:'techceo'},{role:'工廈租戶權益組',color:'#ff8844',text:'所謂的「活化」歷來都是加租逼遷的代名詞。現有的工廈藝術家、小型工場一旦被趕走，西部將失去最後一片草根產業空間。',avatar:'grassroot'}],
+  policies:[{label:'大規模推動工廈轉型',desc:'系統性活化西部工業區，引入創意及青年住屋。',effects:{economy:20,livelihood:-15,environment:-10}},{label:'保障現有租戶，漸進活化',desc:'設定租金管控機制，分階段推進轉型。',effects:{economy:-10,livelihood:15,environment:5}}]},
+'urbanrenewal_east':{title:'舊區重建資源轉移 × 東部知識走廊',bg:'政府將重建資源東移至觀塘及藍田一帶，推動東九龍的全面轉型，將老舊工業區改造為「東九龍知識型社區」。',
+  stakeholders:[{role:'東九龍轉型辦公室',color:'#ffd700',text:'觀塘工業區的轉型已蹉跎多年。將重建資源集中注入，可加速將這片全港最大的舊工業區改造為現代化的知識型經濟中心！',avatar:'official'},{role:'觀塘街坊互助會',color:'#ff8844',text:'觀塘的基層社區——裕民坊、物華街——承載了數十萬基層市民的日常生活。「知識型社區」聽起來光鮮，但對被迫遷的街坊而言，這只是另一場社會清洗。',avatar:'elderwoman'}],
+  policies:[{label:'全面改造東九龍工業帶',desc:'大規模清拆重建，打造知識型經濟中心。',effects:{economy:25,livelihood:-20,environment:-5}},{label:'社區主導的漸進更新',desc:'保留基層商業生態，分階段小區改造。',effects:{economy:-15,livelihood:20,environment:5}}]}
+};
+
+// ===== CORE FUNCTIONS =====
 function toggleRules(){document.getElementById('rules-overlay').classList.toggle('active');}
+function init(){renderCards();updateHUD();document.getElementById('intro-start').addEventListener('click',startCinematic);}
+function startCinematic(){document.getElementById('intro-screen').classList.add('hidden');const t=document.getElementById('intro-transition');t.classList.add('active');setTimeout(()=>{t.classList.remove('active');document.getElementById('app').classList.add('visible');setTimeout(()=>showRound(),500);},4200);}
+function showRound(){const r=document.getElementById('round-screen');document.getElementById('round-number').textContent=state.phase;document.getElementById('round-subtitle').textContent=phaseNames[state.phase]+'規劃階段';r.querySelectorAll('.round-phase-label,.round-phase-number,.round-phase-subtitle,.round-instruction').forEach(e=>{e.style.animation='none';e.offsetHeight;e.style.animation='';});r.classList.add('active');setTimeout(()=>r.classList.remove('active'),3200);}
 
-// ===== INIT =====
-function init(){
-  renderCards();updateHUD();
-  document.getElementById('intro-start').addEventListener('click',startCinematicTransition);
-}
-
-function startCinematicTransition(){
-  document.getElementById('intro-screen').classList.add('hidden');
-  const trans=document.getElementById('intro-transition');
-  trans.classList.add('active');
-  setTimeout(()=>{
-    trans.classList.remove('active');
-    document.getElementById('app').classList.add('visible');
-    setTimeout(()=>showRoundScreen(),500);
-  },4200);
-}
-
-function showRoundScreen(){
-  const rs=document.getElementById('round-screen');
-  document.getElementById('round-number').textContent=state.phase;
-  document.getElementById('round-subtitle').textContent=phaseNames[state.phase]+'規劃階段';
-  rs.querySelectorAll('.round-phase-label,.round-phase-number,.round-phase-subtitle,.round-instruction').forEach(el=>{el.style.animation='none';el.offsetHeight;el.style.animation='';});
-  rs.classList.add('active');
-  setTimeout(()=>{rs.classList.remove('active');},3200);
-}
-
-// ===== RENDER CARDS =====
 function renderCards(){
   const g=document.getElementById('cards-grid');g.innerHTML='';
   projects.forEach(p=>{
-    const u=state.usedProjects.includes(p.id);
-    const c=document.createElement('div');c.className='project-card'+(u?' used':'');c.draggable=!u;c.dataset.projectId=p.id;
-    c.innerHTML=`<div class="card-hectare">${p.hectare}</div><div class="card-title">${p.title}</div><div class="card-desc">${p.desc}</div>${!u?'<div class="card-drag-hint">拖曳至地圖區域</div>':'<div class="card-drag-hint" style="color:rgba(255,68,68,0.4);">已部署</div>'}`;
+    const u=state.usedProjects.includes(p.id);const c=document.createElement('div');c.className='project-card'+(u?' used':'');c.draggable=!u;c.dataset.projectId=p.id;
+    c.innerHTML=`<div class="card-hectare">${p.hectare}</div><div class="card-title">${p.title}</div><div class="card-desc">${p.desc}</div>${!u?'<div class="card-drag-hint">拖曳至地圖</div>':'<div class="card-drag-hint" style="color:rgba(255,68,68,0.4)">已部署</div>'}`;
     if(!u){
       c.addEventListener('dragstart',e=>{if(state.busy)return e.preventDefault();state.currentDragId=p.id;e.dataTransfer.setData('text/plain',p.id);e.dataTransfer.effectAllowed='move';setTimeout(()=>c.style.opacity='0.4',0);});
       c.addEventListener('dragend',()=>{c.style.opacity='1';state.currentDragId=null;document.querySelectorAll('.map-zone').forEach(z=>z.classList.remove('drag-over'));});
@@ -1120,49 +440,48 @@ function renderCards(){
   });
 }
 
-// ===== DRAG/DROP =====
 function handleDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('drag-over');}
 function handleDragLeave(e){e.currentTarget.classList.remove('drag-over');}
 function handleDrop(e,z){e.preventDefault();e.currentTarget.classList.remove('drag-over');const pid=e.dataTransfer.getData('text/plain');if(pid)handleProjectDrop(pid,z);}
+
 function handleProjectDrop(pid,zone){
   if(state.busy||state.phase>state.maxPhase)return;
   const proj=projects.find(p=>p.id===pid);
   if(!proj||state.usedProjects.includes(pid))return;
   const pe=document.getElementById('placed-'+zone);
   if(pe){const b=document.createElement('div');b.className='placed-badge';b.textContent=proj.title;pe.appendChild(b);}
-  openHearing(proj);
+  // Look up the 2D scenario
+  const key=pid+'_'+zone;
+  const scenario=scenarioMatrix[key];
+  if(!scenario)return;
+  openHearing(proj,scenario);
 }
 
-// ===== HEARING =====
 let twInts=[];function clrTW(){twInts.forEach(i=>clearInterval(i));twInts=[];}
-function openHearing(proj){
+
+function openHearing(proj,scenario){
   state.busy=true;clrTW();
-  document.getElementById('modal-project-title').textContent=proj.title+'（'+proj.hectare+'）';
-  document.getElementById('modal-project-bg').textContent=proj.background;
+  document.getElementById('modal-project-title').textContent=scenario.title;
+  document.getElementById('modal-project-bg').textContent=scenario.bg;
   const sc=document.getElementById('stakeholders-container'),pc=document.getElementById('policy-choices');
   sc.innerHTML='';pc.classList.remove('visible');pc.querySelectorAll('.policy-btn').forEach(b=>b.remove());
   document.getElementById('modal-overlay').classList.add('active');
   let tt=0;
-  proj.stakeholders.forEach((s,i)=>{
+  scenario.stakeholders.forEach((s,i)=>{
     const d=i*1200;
     setTimeout(()=>{
       const r=document.createElement('div');r.className='stakeholder-row';
-      const uid='st-'+proj.id+'-'+i+'-'+Date.now();
-      r.innerHTML=`<div class="stakeholder-avatar-wrap">${getAvatarSVG(proj.id,i)}</div><div class="stakeholder-info"><div class="stakeholder-role" style="color:${s.color}">${s.role}</div><div class="stakeholder-text" id="${uid}"><span class="cursor-blink"></span></div></div>`;
-      sc.appendChild(r);
-      typeWriter(uid,s.text,22);
+      const uid='st-'+Date.now()+'-'+i;
+      const avatarHTML=AVT[s.avatar]?AVT[s.avatar]():'';
+      r.innerHTML=`<div class="stakeholder-avatar-wrap">${avatarHTML}</div><div class="stakeholder-info"><div class="stakeholder-role" style="color:${s.color}">${s.role}</div><div class="stakeholder-text" id="${uid}"><span class="cursor-blink"></span></div></div>`;
+      sc.appendChild(r);typeWriter(uid,s.text,20);
     },d);
-    tt=d+s.text.length*22+500;
+    tt=d+s.text.length*20+500;
   });
   setTimeout(()=>{
-    proj.policies.forEach((pol,i)=>{
+    scenario.policies.forEach((pol,i)=>{
       const btn=document.createElement('button');btn.className='policy-btn';
-      const fxHTML=Object.entries(pol.effects).map(([k,v])=>{
-        const nm=k==='economy'?'經濟':k==='environment'?'環境':'民生';
-        const cls=v>0?'fx-positive':v<0?'fx-negative':'fx-neutral';
-        const sign=v>0?'+':'';
-        return `<span class="${cls}">${nm} ${sign}${v}</span>`;
-      }).join('');
+      const fxHTML=Object.entries(pol.effects).map(([k,v])=>{const nm=k==='economy'?'經濟':k==='environment'?'環境':'民生';const cls=v>0?'fx-positive':v<0?'fx-negative':'fx-neutral';const sign=v>0?'+':'';return `<span class="${cls}">${nm} ${sign}${v}</span>`;}).join('');
       btn.innerHTML=`<strong>選項 ${i+1}：${pol.label}</strong><br><span style="color:var(--text-secondary)">${pol.desc}</span><div class="policy-effects">${fxHTML}</div>`;
       btn.addEventListener('click',()=>executePolicy(proj,pol));
       pc.appendChild(btn);
@@ -1170,71 +489,29 @@ function openHearing(proj){
     pc.classList.add('visible');
   },Math.max(2500,tt));
 }
-function typeWriter(id,txt,spd){
-  const el=document.getElementById(id);if(!el)return;
-  let i=0;el.innerHTML='<span class="cursor-blink"></span>';
-  const iv=setInterval(()=>{if(i<txt.length){el.innerHTML='「'+txt.substring(0,i+1)+'」<span class="cursor-blink"></span>';i++;}else{el.innerHTML='「'+txt+'」';clearInterval(iv);}},spd);
-  twInts.push(iv);
-}
+
+function typeWriter(id,txt,spd){const el=document.getElementById(id);if(!el)return;let i=0;el.innerHTML='<span class="cursor-blink"></span>';const iv=setInterval(()=>{if(i<txt.length){el.innerHTML='「'+txt.substring(0,i+1)+'」<span class="cursor-blink"></span>';i++;}else{el.innerHTML='「'+txt+'」';clearInterval(iv);}},spd);twInts.push(iv);}
 
 function executePolicy(proj,pol){
   clrTW();document.getElementById('modal-overlay').classList.remove('active');
   state.usedProjects.push(proj.id);
-  state.economy=clamp(state.economy+pol.effects.economy);
-  state.environment=clamp(state.environment+pol.effects.environment);
-  state.livelihood=clamp(state.livelihood+pol.effects.livelihood);
+  state.economy=clamp(state.economy+pol.effects.economy);state.environment=clamp(state.environment+pol.effects.environment);state.livelihood=clamp(state.livelihood+pol.effects.livelihood);
   const big=Object.values(pol.effects).some(v=>v<=-20);
   addLog(proj,pol);updateHUD();renderCards();
   if(big){document.body.classList.add('shake','red-flash');setTimeout(()=>document.body.classList.remove('shake','red-flash'),550);}
   setTimeout(()=>showTransition(proj),big?700:250);
 }
 function clamp(v){return Math.max(0,Math.min(100,v));}
-function addLog(proj,pol){
-  const e=document.getElementById('log-entries'),en=document.createElement('div');en.className='log-entry';
-  const fx=Object.entries(pol.effects).map(([k,v])=>{const nm=k==='economy'?'經濟':k==='environment'?'環境':'民生';const cls=v>=0?'log-positive':'log-negative';const s=v>=0?'+':'';return `<span class="${cls}">${nm}${s}${v}</span>`;}).join(' ');
-  en.innerHTML=`<span class="log-phase">階段${state.phase}</span> ${proj.title}：${pol.label}　${fx}`;
-  e.appendChild(en);e.scrollTop=e.scrollHeight;
-}
-function updateHUD(){
-  document.getElementById('hud-phase').textContent=`規劃階段 ${Math.min(state.phase,state.maxPhase)} / ${state.maxPhase}`;
-  document.getElementById('bar-econ').style.width=state.economy+'%';document.getElementById('val-econ').textContent=state.economy;
-  document.getElementById('bar-env').style.width=state.environment+'%';document.getElementById('val-env').textContent=state.environment;
-  document.getElementById('bar-live').style.width=state.livelihood+'%';document.getElementById('val-live').textContent=state.livelihood;
-}
+function addLog(proj,pol){const e=document.getElementById('log-entries'),en=document.createElement('div');en.className='log-entry';const fx=Object.entries(pol.effects).map(([k,v])=>{const nm=k==='economy'?'經濟':k==='environment'?'環境':'民生';const cls=v>=0?'log-positive':'log-negative';const s=v>=0?'+':'';return `<span class="${cls}">${nm}${s}${v}</span>`;}).join(' ');en.innerHTML=`<span class="log-phase">階段${state.phase}</span> ${proj.title}：${pol.label}　${fx}`;e.appendChild(en);e.scrollTop=e.scrollHeight;}
+function updateHUD(){document.getElementById('hud-phase').textContent=`規劃階段 ${Math.min(state.phase,state.maxPhase)} / ${state.maxPhase}`;document.getElementById('bar-econ').style.width=state.economy+'%';document.getElementById('val-econ').textContent=state.economy;document.getElementById('bar-env').style.width=state.environment+'%';document.getElementById('val-env').textContent=state.environment;document.getElementById('bar-live').style.width=state.livelihood+'%';document.getElementById('val-live').textContent=state.livelihood;}
 
-function showTransition(proj){
-  const scr=document.getElementById('transition-screen'),txt=document.getElementById('transition-text'),sub=document.getElementById('transition-sub');
-  if(state.phase>=state.maxPhase){txt.innerHTML='所有規劃階段已完成<br><span class="loading-dots">正在生成最終評估報告</span>';sub.textContent='';}
-  else{txt.innerHTML='戰略部署完成<br><span class="loading-dots">正在推進至下一規劃階段</span>';sub.textContent=`「${proj.title}」已納入策略空間框架`;}
-  scr.classList.add('active');
-  setTimeout(()=>{scr.classList.remove('active');state.phase++;if(state.phase>state.maxPhase)showFinalReport();else{updateHUD();showRoundScreen();}state.busy=false;},2600);
-}
+function showTransition(proj){const scr=document.getElementById('transition-screen'),txt=document.getElementById('transition-text'),sub=document.getElementById('transition-sub');if(state.phase>=state.maxPhase){txt.innerHTML='所有規劃階段已完成<br><span class="loading-dots">正在生成最終評估報告</span>';sub.textContent='';}else{txt.innerHTML='戰略部署完成<br><span class="loading-dots">正在推進至下一規劃階段</span>';sub.textContent=`「${proj.title}」已納入策略空間框架`;}scr.classList.add('active');setTimeout(()=>{scr.classList.remove('active');state.phase++;if(state.phase>state.maxPhase)showFinal();else{updateHUD();showRound();}state.busy=false;},2600);}
 
-function showFinalReport(){
-  const ov=document.getElementById('final-overlay'),bx=document.getElementById('final-box');
-  const avg=Math.round((state.economy+state.environment+state.livelihood)/3);
-  let gr,gc;
-  if(avg>=70){gr='A 級 — 卓越策略規劃';gc='#00ff88';}else if(avg>=55){gr='B 級 — 穩健但有待改進';gc='#ffd700';}else if(avg>=40){gr='C 級 — 發展失衡，須重新審視';gc='#ff8844';}else{gr='D 級 — 規劃失當，須徹底檢討';gc='#ff4444';}
-  const cm=genComm(avg>=70?'A':avg>=55?'B':avg>=40?'C':'D');
-  bx.innerHTML=`<h2>最終評估報告</h2><div style="font-size:clamp(0.7rem,0.95vw,0.82rem);color:var(--text-secondary);text-align:center;margin-bottom:20px;">基於閣下在五個規劃階段中的策略部署，系統已完成綜合分析</div><div class="final-bar-row"><div class="final-bar-label" style="color:#ffd700">經濟競爭力</div><div class="final-bar-track"><div class="final-bar-fill" id="final-econ" style="width:0%;background:linear-gradient(90deg,#ffd700,#ffaa00);"></div></div><div class="final-bar-val" style="color:#ffd700">${state.economy}</div></div><div class="final-bar-row"><div class="final-bar-label" style="color:#00ff88">環境抗禦力</div><div class="final-bar-track"><div class="final-bar-fill" id="final-env" style="width:0%;background:linear-gradient(90deg,#00ff88,#00cc66);"></div></div><div class="final-bar-val" style="color:#00ff88">${state.environment}</div></div><div class="final-bar-row"><div class="final-bar-label" style="color:#00d4ff">社會宜居度</div><div class="final-bar-track"><div class="final-bar-fill" id="final-live" style="width:0%;background:linear-gradient(90deg,#00d4ff,#0088ff);"></div></div><div class="final-bar-val" style="color:#00d4ff">${state.livelihood}</div></div><div id="final-grade" style="color:${gc}">${gr}</div><div id="final-commentary">${cm}</div><button id="final-restart">重新開始模擬</button>`;
-  ov.classList.add('active');
-  setTimeout(()=>{const a=document.getElementById('final-econ'),b=document.getElementById('final-env'),c=document.getElementById('final-live');if(a)a.style.width=state.economy+'%';if(b)b.style.width=state.environment+'%';if(c)c.style.width=state.livelihood+'%';},350);
-  setTimeout(()=>{const btn=document.getElementById('final-restart');if(btn)btn.addEventListener('click',resetGame);},100);
-}
-function genComm(lv){
-  const e=state.economy,v=state.environment,l=state.livelihood;
-  if(lv==='A')return `閣下在五個規劃階段中展現了極具前瞻性的策略視野。三大指數（經濟 ${e}、環境 ${v}、民生 ${l}）均維持於健康水平，初步達致《香港2030+》所倡議的「超越適時和適量」規劃願景。閣下的政策組合有效平衡了經濟增長的迫切需要與環境及社會承載力的長遠考量，體現了可持續發展的核心精神。惟須留意，規劃乃持續演進的過程，任何單一維度的過度傾斜皆可能在中長期產生系統性風險，建議持續監測各項指標的動態變化，確保香港在全球城市競爭中維持獨特的制度優勢與宜居品質。`;
-  if(lv==='B'){let t=`閣下的規劃策略大體穩健，但在個別維度仍存在改善空間。`;if(e<45)t+=`經濟競爭力指數偏低（${e}），反映土地供應策略或未能充分回應市場對高增值用地的殷切需求，長遠或削弱香港作為國際金融中心的競爭優勢。`;if(v<45)t+=`環境與文化抗禦力指數（${v}）低於理想水平，顯示部分發展項目對自然生態系統造成了可觀壓力，有違《香港2030+》中關於提升城市環境抗禦力的核心目標。`;if(l<45)t+=`社會民生與宜居度指數（${l}）偏低，暗示閣下的政策取向或過度側重經濟效率，而未能充分照顧基層市民的住屋、社區網絡及生活質素需求。`;t+=`總體而言，閣下的策略方向正確，惟須在後續規劃中更審慎地平衡各持份者的合理訴求，方能真正達致「宜居、具競爭力及可持續發展」的規劃願景。`;return t;}
-  if(lv==='C'){let t=`閣下的規劃成效未如理想，三大指數（經濟 ${e}、環境 ${v}、民生 ${l}）呈現顯著的結構性失衡。`;if(e<35)t+=`經濟競爭力嚴重不足，土地供應策略未能為香港的產業轉型及經濟多元化提供充足的空間支撐。`;if(v<35)t+=`環境指數跌至危險水平，反映發展項目對自然生態造成了難以逆轉的損害，削弱了城市的長遠環境抗禦力。`;if(l<35)t+=`民生指數偏低，大量市民的住屋與社區需求未獲妥善回應，社會凝聚力面臨嚴峻考驗。`;t+=`建議閣下深入反思各項政策抉擇的連鎖效應，在發展與保育之間尋求更具策略性的平衡點。《香港2030+》強調規劃須「超越適時和適量」，而非陷入短視的零和博弈。`;return t;}
-  return `閣下的規劃策略出現嚴重偏差，三大指數（經濟 ${e}、環境 ${v}、民生 ${l}）均跌至令人憂慮的水平。多項政策抉擇未能有效回應持份者的核心關切，導致經濟動力不足、生態環境惡化、民生福祉受損的三重困局。這一結果與《香港2030+》所揭櫫的「規劃宜居及可持續發展城市」願景背道而馳。閣下亟需從根本上重新審視發展策略的價值取向，確保規劃決策能在經濟效率、環境公義與社會公平之間取得動態平衡，而非在各方訴求之間作出非此即彼的取捨。香港面對的挑戰並非資源匱乏，而是能否建構一套兼具前瞻性與包容性的空間治理框架。`;
-}
-function resetGame(){
-  state.economy=50;state.environment=50;state.livelihood=50;state.phase=1;state.usedProjects=[];state.busy=false;
-  document.getElementById('final-overlay').classList.remove('active');
-  document.getElementById('log-entries').innerHTML='<div class="log-entry">系統已重置。三大指數均為 50，等待閣下的策略部署。</div>';
-  ['victoria','north','west','east'].forEach(z=>{document.getElementById('placed-'+z).innerHTML='';});
-  updateHUD();renderCards();showRoundScreen();
-}
+function showFinal(){const ov=document.getElementById('final-overlay'),bx=document.getElementById('final-box');const avg=Math.round((state.economy+state.environment+state.livelihood)/3);let gr,gc;if(avg>=70){gr='A 級 — 卓越策略規劃';gc='#00ff88';}else if(avg>=55){gr='B 級 — 穩健但有待改進';gc='#ffd700';}else if(avg>=40){gr='C 級 — 發展失衡，須重新審視';gc='#ff8844';}else{gr='D 級 — 規劃失當，須徹底檢討';gc='#ff4444';}const cm=genComm(avg>=70?'A':avg>=55?'B':avg>=40?'C':'D');bx.innerHTML=`<h2>最終評估報告</h2><div style="font-size:0.78rem;color:var(--text-secondary);text-align:center;margin-bottom:18px;">基於閣下在五個規劃階段中的策略部署，系統已完成綜合分析</div><div class="final-bar-row"><div class="final-bar-label" style="color:#ffd700">經濟競爭力</div><div class="final-bar-track"><div class="final-bar-fill" id="final-econ" style="width:0%;background:linear-gradient(90deg,#ffd700,#ffaa00)"></div></div><div class="final-bar-val" style="color:#ffd700">${state.economy}</div></div><div class="final-bar-row"><div class="final-bar-label" style="color:#00ff88">環境抗禦力</div><div class="final-bar-track"><div class="final-bar-fill" id="final-env" style="width:0%;background:linear-gradient(90deg,#00ff88,#00cc66)"></div></div><div class="final-bar-val" style="color:#00ff88">${state.environment}</div></div><div class="final-bar-row"><div class="final-bar-label" style="color:#00d4ff">社會宜居度</div><div class="final-bar-track"><div class="final-bar-fill" id="final-live" style="width:0%;background:linear-gradient(90deg,#00d4ff,#0088ff)"></div></div><div class="final-bar-val" style="color:#00d4ff">${state.livelihood}</div></div><div id="final-grade" style="color:${gc}">${gr}</div><div id="final-commentary">${cm}</div><button id="final-restart">重新開始模擬</button>`;ov.classList.add('active');setTimeout(()=>{const a=document.getElementById('final-econ'),b=document.getElementById('final-env'),c=document.getElementById('final-live');if(a)a.style.width=state.economy+'%';if(b)b.style.width=state.environment+'%';if(c)c.style.width=state.livelihood+'%';},350);setTimeout(()=>{const btn=document.getElementById('final-restart');if(btn)btn.addEventListener('click',resetGame);},100);}
+
+function genComm(lv){const e=state.economy,v=state.environment,l=state.livelihood;if(lv==='A')return `閣下在五個規劃階段中展現了極具前瞻性的策略視野。三大指數（經濟 ${e}、環境 ${v}、民生 ${l}）均維持於健康水平，初步達致《香港2030+》所倡議的「超越適時和適量」規劃願景。閣下的政策組合有效平衡了經濟增長的迫切需要與環境及社會承載力的長遠考量，體現了可持續發展的核心精神。`;if(lv==='B'){let t=`閣下的規劃策略大體穩健，但在個別維度仍存在改善空間。`;if(e<45)t+=`經濟競爭力指數偏低（${e}），長遠或削弱香港作為國際金融中心的競爭優勢。`;if(v<45)t+=`環境與文化抗禦力指數（${v}）低於理想水平，有違提升城市環境抗禦力的核心目標。`;if(l<45)t+=`社會民生與宜居度指數（${l}）偏低，未能充分照顧基層市民需求。`;t+=`總體而言，策略方向正確，惟須更審慎地平衡各持份者的合理訴求。`;return t;}if(lv==='C'){let t=`閣下的規劃成效未如理想，三大指數呈現結構性失衡。`;if(e<35)t+=`經濟競爭力嚴重不足。`;if(v<35)t+=`環境指數跌至危險水平。`;if(l<35)t+=`民生指數偏低，社會凝聚力面臨考驗。`;t+=`建議深入反思政策抉擇的連鎖效應，在發展與保育之間尋求更具策略性的平衡。`;return t;}return `閣下的規劃策略出現嚴重偏差，三大指數（經濟 ${e}、環境 ${v}、民生 ${l}）均跌至令人憂慮的水平。多項政策抉擇未能回應持份者的核心關切，導致經濟動力不足、生態惡化、民生受損的三重困局。閣下亟需從根本上重新審視發展策略的價值取向。`;}
+
+function resetGame(){state.economy=50;state.environment=50;state.livelihood=50;state.phase=1;state.usedProjects=[];state.busy=false;document.getElementById('final-overlay').classList.remove('active');document.getElementById('log-entries').innerHTML='<div class="log-entry">系統已重置。三大指數均為 50，等待閣下的策略部署。</div>';['victoria','north','west','east'].forEach(z=>{document.getElementById('placed-'+z).innerHTML='';});updateHUD();renderCards();showRound();}
 
 document.addEventListener('DOMContentLoaded',init);
 </script>
