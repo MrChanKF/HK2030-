@@ -258,7 +258,7 @@ body.red-flash #bg-overlay{box-shadow:inset 0 0 150px rgba(255,0,0,0.2);}
     <div class="intro-divider"></div>
     <p class="intro-sub">本模擬器以《香港2030+：跨越2030年的規劃遠景與策略》報告為藍本，引導閣下以城市規劃師的身份，就香港長遠土地供應策略中六項核心發展項目作出關鍵的戰略部署。<br><br>在五個規劃階段內，閣下須在經濟競爭力、環境與文化抗禦力、以及社會民生與宜居度三大維度之間審慎權衡取捨，冀望達致「宜居、具競爭力及可持續發展」的規劃願景。</p>
     <button id="intro-start">啟動模擬</button>
-    <div class="intro-footnote">基於《香港2030+》最終報告 · 2019-2048 年土地供應策略</div>
+    <div class="intro-footnote">基於《香港2030+》報告 · 2019-2048 年土地供應策略</div>
   </div>
 </div>
 
@@ -294,7 +294,7 @@ body.red-flash #bg-overlay{box-shadow:inset 0 0 150px rgba(255,0,0,0.2);}
 </div>
 
 <div id="modal-overlay"><div id="modal-box"><div id="modal-header"><div id="modal-project-title"></div><div id="modal-project-bg"></div></div><div id="modal-hearing-title">公眾諮詢大會 — 持份者角力</div><div id="stakeholders-container"></div><div id="policy-choices"><div id="policy-choices-title">策略抉擇 — 請審慎決斷</div></div></div></div>
-<div id="rules-overlay"><div id="rules-box"><h2>遊戲規則與操作指引</h2><h3>一、模擬器背景</h3><p>本模擬器以《香港2030+：跨越2030年的規劃遠景與策略》最終報告為藍本。閣下將以城市規劃師的身份，在五個規劃階段內就六項核心發展項目作出關鍵的政策抉擇。</p><h3>二、核心數值系統</h3><ul><li><strong style="color:#ffd700">經濟競爭力</strong> — 反映香港作為國際金融、商貿及創科中心的競爭優勢。</li><li><strong style="color:#00ff88">環境與文化抗禦力</strong> — 衡量自然生態、鄉郊文化地景的保育狀況。</li><li><strong style="color:#00d4ff">社會民生與宜居度</strong> — 涵蓋房屋供應、社區網絡、居民生活質素。</li></ul><h3>三、操作方式</h3><ul><li>每階段從項目庫拖放一張卡片至地圖任意區域。</li><li>不同項目放到不同區域會觸發完全不同的戰略情境。</li><li>閣下須在兩個政策選項中擇其一。</li><li>完成五階段後生成綜合評估報告。</li></ul><h3>四、策略提示</h3><p>六項項目中僅能部署五項。每個項目放在不同區域代表不同的戰略轉移方向，沒有絕對的對錯，只有取捨。</p><button id="rules-close" onclick="toggleRules()">明白了</button></div></div>
+<div id="rules-overlay"><div id="rules-box"><h2>遊戲規則與操作指引</h2><h3>一、模擬器背景</h3><p>本模擬器以《香港2030+：跨越2030年的規劃遠景與策略》報告為藍本。閣下將以城市規劃師的身份，在五個規劃階段內就六項核心發展項目作出關鍵的政策抉擇。</p><h3>二、核心數值系統</h3><ul><li><strong style="color:#ffd700">經濟競爭力</strong> — 反映香港作為國際金融、商貿及創科中心的競爭優勢。</li><li><strong style="color:#00ff88">環境與文化抗禦力</strong> — 衡量自然生態、鄉郊文化地景的保育狀況。</li><li><strong style="color:#00d4ff">社會民生與宜居度</strong> — 涵蓋房屋供應、社區網絡、居民生活質素。</li></ul><h3>三、操作方式</h3><ul><li>每階段從項目庫拖放一張卡片至地圖任意區域。</li><li>不同項目放到不同區域會觸發完全不同的戰略情境。</li><li>閣下須在兩個政策選項中擇其一。</li><li>完成五階段後生成綜合評估報告。</li></ul><h3>四、策略提示</h3><p>六項項目中僅能部署五項。每個項目放在不同區域代表不同的戰略轉移方向，沒有絕對的對錯，只有取捨。</p><button id="rules-close" onclick="toggleRules()">明白了</button></div></div>
 <div id="transition-screen"><div id="transition-text"></div><div id="transition-sub"></div></div>
 <div id="final-overlay"><div id="final-box"></div></div>
 
@@ -334,7 +334,7 @@ const projects=[
 // ===== 2D SCENARIO MATRIX: Project × Region = Unique Scenario =====
 const scenarioMatrix={
 // ---- 交椅洲人工島 ----
-'kauyi_victoria':{title:'交椅洲人工島 × 維港都會區',bg:'政府按原定規劃在中部水域推展約 1,000 公頃人工島填海，建立第三個核心商業區（CBD3），直接擴展維港都會區的經濟腹地。根據《香港2030+》最終報告，2019 至 2048 年間香港整體土地需求為 5,800 至 6,200 公頃，扣除已推展項目後仍欠缺約 3,000 公頃。此舉被視為應對土地短缺的戰略支柱。',
+'kauyi_victoria':{title:'交椅洲人工島 × 維港都會區',bg:'政府按原定規劃在中部水域推展約 1,000 公頃人工島填海，建立第三個核心商業區（CBD3），直接擴展維港都會區的經濟腹地。根據《香港2030+》報告，2019 至 2048 年間香港整體土地需求為 5,800 至 6,200 公頃，扣除已推展項目後仍欠缺約 3,000 公頃。此舉被視為應對土地短缺的戰略支柱。',
   stakeholders:[{role:'商界巨頭',color:'#ffd700',text:'CBD3 是維持國際金融中心地位的唯一出路！若不及早闢拓熟地，跨國企業將加速外遷，香港的競爭力將遭受不可逆轉的打擊。',avatar:'suit'},{role:'生態學者',color:'#00ff88',text:'大規模填海將不可逆轉地削弱中部水域的環境抗禦力。石珊瑚群落、中華白海豚的棲息地一旦破壞，再無修復可能。',avatar:'ecologist'}],
   policies:[{label:'鐵腕推動高增值商業填海',desc:'全力發展CBD3，最大化金融商業產出。',effects:{economy:25,livelihood:-10,environment:-20}},{label:'轉向生態及公營房屋主導',desc:'大幅削減商業用地，以公營房屋及生態緩衝為核心。',effects:{economy:-15,livelihood:25,environment:-10}}]},
 'kauyi_north':{title:'交椅洲預算轉移 × 北部都會區',bg:'政府決定「棄海投陸」，將原定數千億填海預算全面轉移至北部邊境，進行極具野心的深港大融合陸地開發計劃，大規模闢拓新界北熟地。',
